@@ -23,11 +23,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   
-  const baseStyles = "flex items-center justify-center gap-2 rounded-xl font-bold transition-all duration-200 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none";
+  const baseStyles = "flex items-center justify-center font-medium gap-2 rounded-lg transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer outline-none";
   
   const variantStyles = {
     primary: "bg-primary text-white shadow-primary/20 hover:shadow-primary/40",
-    secondary: "bg-white text-ternary border border-border-brand hover:bg-off-white active:bg-primary active:text-white focus:bg-primary focus:text-white transition-colors",
+    secondary: "bg-white text-ternary border border-border hover:bg-off-white active:bg-primary active:text-white focus:bg-primary focus:text-white transition-colors",
     qualified: "bg-success-bg text-success-text border border-success-border hover:bg-green-100/50",
     destructive: "bg-error-bg text-error-text border border-error-border hover:bg-red-100/50",
   };

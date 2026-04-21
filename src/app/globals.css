@@ -20,6 +20,10 @@
   --error-bg: #FEF2F2;
   --error-text: #B91C1C;
   --error-border: #FECACA;
+  --blue :#3460DC;
+  --green: #10B981;
+  --purple: #8B5CF6;
+  --yellow:#F59E0B;
 }
 
 @theme inline {
@@ -38,6 +42,10 @@
   --color-error-border: var(--error-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-blue: var(--blue);
+  --color-green: var(--green);
+  --color-purple: var(--purple);
+  --color-yellow: var(--yellow);
 }
 
 @layer utilities {
