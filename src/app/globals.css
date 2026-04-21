@@ -2,14 +2,46 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
+  --primary: #FF5A35;
+  --secondary: #ffffff;
+  --ternary: #000000;
+  --quaternary: #6B7280;
+  --off-white: #F9FAFB;
+  --brand-gradient: linear-gradient(135deg, #FF6B4A 0%, #FF3D1F 100%);
+  --success-bg: #F0FDF4;
+  --success-text: #15803D;
+  --success-border: #BBF7D0;
+  --error-bg: #FEF2F2;
+  --error-text: #B91C1C;
+  --error-border: #FECACA;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-ternary: var(--ternary);
+  --color-quaternary: var(--quaternary);
+  --color-off-white: var(--off-white);
+  --color-success-bg: var(--success-bg);
+  --color-success-text: var(--success-text);
+  --color-success-border: var(--success-border);
+  --color-error-bg: var(--error-bg);
+  --color-error-text: var(--error-text);
+  --color-error-border: var(--error-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer utilities {
+  .bg-brand-gradient {
+    background: var(--brand-gradient);
+  }
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
