@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Zap, LineChart } from "lucide-react";
+import Image from "next/image";
 import { FeatureCard } from "@/components/auth/FeatureCard";
 
 export default function AuthLayout({
@@ -14,14 +14,18 @@ export default function AuthLayout({
         <div className="w-full max-w-xl">
           {/* Logo and Branding */}
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <div className="w-6 h-6 bg-brand-gradient rounded-md flex items-center justify-center">
-                <div className="w-3 h-3 border-r-2 border-b-2 border-white rotate-45 mb-0.5" />
-              </div>
+            <div className="w-12 h-12 bg-background border border-border rounded-xl flex items-center justify-center shadow-xl">
+              <Image 
+                src="/assets/logo/Invennico.svg" 
+                alt="Invennico Logo" 
+                width={32} 
+                height={32}
+                className="object-contain"
+              />
             </div>
             <div>
-              <h2 className="font-bold text-xl leading-tight">Invennico TechnoLabs</h2>
-              <p className="text-white/80 text-sm font-medium">Lead Portal</p>
+              <h2 className="font-bold text-xl leading-tight tracking-tight">Invennico TechnoLabs</h2>
+              <p className="text-white/80 text-sm font-medium uppercase tracking-widest">Lead Portal</p>
             </div>
           </div>
 
@@ -39,17 +43,38 @@ export default function AuthLayout({
             {/* Feature Cards */}
             <div className="space-y-4">
               <FeatureCard
-                icon={<Sparkles className="w-5 h-5 text-brand-orange" />}
+                icon={
+                  <Image 
+                    src="/assets/icons/star.svg" 
+                    alt="AI Powered" 
+                    width={24} 
+                    height={24} 
+                  />
+                }
                 title="AI-Powered Analysis"
                 description="Instant lead qualification and tech stack recommendations"
               />
               <FeatureCard
-                icon={<Zap className="w-5 h-5 text-brand-orange" />}
+                icon={
+                  <Image 
+                    src="/assets/icons/enregy.svg" 
+                    alt="Automated Proposals" 
+                    width={24} 
+                    height={24} 
+                  />
+                }
                 title="Automated Proposals"
                 description="Generate scope documents and cost estimates in seconds"
               />
               <FeatureCard
-                icon={<LineChart className="w-5 h-5 text-brand-orange" />}
+                icon={
+                  <Image 
+                    src="/assets/icons/trend.svg" 
+                    alt="CRM Integration" 
+                    width={24} 
+                    height={24} 
+                  />
+                }
                 title="CRM Integration"
                 description="Seamless sync with Zoho CRM and Google Drive"
               />
@@ -58,7 +83,7 @@ export default function AuthLayout({
         </div>
 
         {/* Subtle Decorative element */}
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-linear-to-t from-black/5 to-transparent pointer-events-none" />
       </div>
 
       {/* Right Section - Auth Content (Form) */}

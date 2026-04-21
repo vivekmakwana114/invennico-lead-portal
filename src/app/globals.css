@@ -1,14 +1,19 @@
 @import "tailwindcss";
 
 :root {
+  /* System Colors */
   --background: #ffffff;
   --foreground: #111827;
-  --primary: #FF5A35;
-  --secondary: #ffffff;
-  --ternary: #000000;
-  --quaternary: #6B7280;
-  --off-white: #F9FAFB;
-  --brand-gradient: linear-gradient(135deg, #FF6B4A 0%, #FF3D1F 100%);
+  --border: #E5E7EB;
+  --off-white: #FAFAFA;
+
+  /* Brand Colors */
+  --primary: #FF5C3D;
+  --secondary: #000000;
+  --ternary: #6B7280;
+  --brand-gradient: linear-gradient(135deg, #FF5C3D 0%, #FE593A 8.33%, #FD5536 16.67%, #FD5232 25%, #FC4E2E 33.33%, #FB4B2A 41.67%, #FA4726 50%, #F64326 57.14%, #F13E26 64.29%, #ED3A26 71.43%, #E93526 78.57%, #E53026 85.71%, #E02B26 92.86%, #DC2626 100%);
+
+  /* Semantic Colors */
   --success-bg: #F0FDF4;
   --success-text: #15803D;
   --success-border: #BBF7D0;
@@ -23,7 +28,7 @@
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-ternary: var(--ternary);
-  --color-quaternary: var(--quaternary);
+  --color-border: var(--border);
   --color-off-white: var(--off-white);
   --color-success-bg: var(--success-bg);
   --color-success-text: var(--success-text);
@@ -40,14 +45,7 @@
     background: var(--brand-gradient);
   }
   .glass {
-    @apply backdrop-blur-md bg-white/10 border border-white/20;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    @apply backdrop-blur-md bg-white/5 border border-white/20;
   }
 }
 
@@ -55,4 +53,5 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
 }
