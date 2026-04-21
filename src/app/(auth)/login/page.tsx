@@ -7,12 +7,14 @@ import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { MOCK_USER } from "@/lib/constants";
+import { useRouter } from "next/navigation";
 
 /**
  * LoginPage with validation and feedback.
  * Validates email and password against brand-specific criteria.
  */
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +43,7 @@ export default function LoginPage() {
           description: "You are being redirected to your dashboard.",
           duration: 3000,
         });
-        // Future: router.push('/dashboard')
+        router.push('/dashboard')
       } else {
         toast.error("Access Denied", {
           description: "Invalid email or password. Please try again.",
