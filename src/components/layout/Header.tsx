@@ -11,10 +11,17 @@ export function Header() {
   // Basic breadcrumb logic
   const pathSegments = pathname?.split("/").filter(Boolean) || [];
   
+  const PAGE_TITLES: Record<string, string> = {
+    dashboard: "Dashboard",
+    leads: "Leads",
+    create: "Create New Lead",
+    settings: "Settings",
+  };
+
   const getPageTitle = () => {
     if (pathSegments.length === 0) return "Dashboard";
     const lastSegment = pathSegments[pathSegments.length - 1];
-    return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1);
+    return PAGE_TITLES[lastSegment] ?? (lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1));
   };
 
   return (
