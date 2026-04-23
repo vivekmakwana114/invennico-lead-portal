@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -9,7 +10,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { getLeadDetail } from "@/components/leads/LeadsDetailData";
+import { getLeadDetail, type LeadDetail } from "@/components/leads/LeadsDetailData";
+import { WhatsAppReplyModal } from "@/components/leads/WhatsAppReplyModal";
+import { PrepareProposalModal } from "@/components/leads/PrepareProposalModal";
 
 // ── Score Colour ──────────────────────────────────────────────────────────────
 
@@ -42,7 +45,33 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 
 export default function LeadViewPage() {
   const { id } = useParams<{ id: string }>();
-  const lead = getLeadDetail(decodeURIComponent(id));
+  const [lead, setLead] = useState<LeadDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [proposalOpen, setProposalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const pocData = sessionStorage.getItem(`lead_${id}`);
+      if (pocData) {
+        setLead(JSON.parse(pocData) as LeadDetail);
+      } else {
+        setLead(getLeadDetail(decodeURIComponent(id)));
+      }
+    } catch {
+      setLead(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-foreground font-medium">Loading Lead Data...</p>
+      </div>
+    );
+  }
 
   if (!lead) {
     return (
@@ -292,6 +321,7 @@ export default function LeadViewPage() {
               iconPlacement="left"
               variant="primary"
               className="w-full px-4 py-2.5 text-sm"
+              onClick={() => setWhatsappOpen(true)}
             />
 
             <Button
@@ -300,6 +330,7 @@ export default function LeadViewPage() {
               iconPlacement="left"
               variant="blue"
               className="w-full px-4 py-2.5 text-sm"
+              onClick={() => setProposalOpen(true)}
             />
 
             <div className="grid grid-cols-2 gap-2">
@@ -338,6 +369,16 @@ export default function LeadViewPage() {
           </Card>
         </div>
       </div>
+      <WhatsAppReplyModal
+        isOpen={whatsappOpen}
+        onClose={() => setWhatsappOpen(false)}
+        lead={lead}
+      />
+      <PrepareProposalModal
+        isOpen={proposalOpen}
+        onClose={() => setProposalOpen(false)}
+        lead={lead}
+      />
     </div>
   );
 }

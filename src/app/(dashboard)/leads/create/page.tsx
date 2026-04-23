@@ -202,7 +202,6 @@ export default function CreateLeadPage() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex items-center justify-end gap-3 pb-8">
         <Button
           label="Cancel"
@@ -216,7 +215,16 @@ export default function CreateLeadPage() {
           iconPlacement="left"
           variant="primary"
           className="px-6 py-2.5"
-          onClick={() => router.push("/leads/analyzing")}
+          onClick={() => {
+            sessionStorage.setItem("pending_lead_data", JSON.stringify({
+              title: form.title,
+              details: form.details,
+              source: form.source,
+              notes: form.notes,
+              attachments: files.map(f => f.name).join(", "),
+            }));
+            router.push("/leads/analyzing");
+          }}
         />
       </div>
     </div>
