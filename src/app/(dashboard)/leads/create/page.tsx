@@ -74,9 +74,9 @@ export default function CreateLeadPage() {
   const inputClass = "w-full px-4 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground placeholder:text-ternary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors";
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Back link */}
-      <Link
+      <Link 
         href="/leads"
         className="inline-flex items-center gap-1.5 text-sm text-ternary hover:text-foreground transition-colors"
       >
@@ -216,6 +216,7 @@ export default function CreateLeadPage() {
           iconPlacement="left"
           variant="primary"
           className="px-6 py-2.5"
+          onClick={() => router.push("/leads/analyzing")}
         />
       </div>
     </div>

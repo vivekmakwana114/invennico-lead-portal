@@ -30,7 +30,7 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <div className={cn("bg-white p-6 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow", className)}>
+    <div className={cn("bg-white p-4 sm:p-6 rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow", className)}>
       <div className="flex justify-between items-start mb-4">
         <div>
           {icon}
@@ -46,7 +46,7 @@ export function StatCard({
         )}
       </div>
       <div>
-        <h3 className="text-3xl font-bold text-foreground mb-1">{value}</h3>
+        <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{value}</h3>
         <p className="text-ternary text-sm font-medium">{label}</p>
         {description && (
           <p className="text-ternary text-xs mt-2">{description}</p>

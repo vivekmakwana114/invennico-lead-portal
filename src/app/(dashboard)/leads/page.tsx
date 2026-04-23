@@ -86,6 +86,15 @@ export default function LeadsPage() {
     return (value: string) => { setter(value); setCurrentPage(1); };
   }
 
+  function resetFilters() {
+    setStatusFilter("all");
+    setSourceFilter("All");
+    setDateRange("7");
+    setCurrentPage(1);
+  }
+
+  const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "All" || dateRange !== "7";
+
   const totalLeads = ALL_LEADS.length;
   const qualifiedCount = ALL_LEADS.filter((l) => l.status === "qualified").length;
   const proposalCount = ALL_LEADS.filter((l) => l.status === "proposal-sent").length;
@@ -96,7 +105,7 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Leads Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Leads Management</h1>
           <p className="text-sm text-ternary mt-0.5">Track and manage all incoming leads</p>
         </div>
         <Button
@@ -135,31 +144,43 @@ export default function LeadsPage() {
 
         {/* Filter dropdowns */}
         {showFilters && (
-          <div className="border-t border-border px-4 py-5 grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground">Status</label>
-              <Dropdown
-                options={STATUS_OPTIONS}
-                value={statusFilter}
-                onChange={handleFilter(setStatusFilter)}
-              />
+          <div className="border-t border-border px-4 py-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-foreground">Status</label>
+                <Dropdown
+                  options={STATUS_OPTIONS}
+                  value={statusFilter}
+                  onChange={handleFilter(setStatusFilter)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-foreground">Source</label>
+                <Dropdown
+                  options={SOURCE_OPTIONS}
+                  value={sourceFilter}
+                  onChange={handleFilter(setSourceFilter)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-foreground">Date Range</label>
+                <Dropdown
+                  options={DATE_RANGE_OPTIONS}
+                  value={dateRange}
+                  onChange={handleFilter(setDateRange)}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground">Source</label>
-              <Dropdown
-                options={SOURCE_OPTIONS}
-                value={sourceFilter}
-                onChange={handleFilter(setSourceFilter)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground">Date Range</label>
-              <Dropdown
-                options={DATE_RANGE_OPTIONS}
-                value={dateRange}
-                onChange={handleFilter(setDateRange)}
-              />
-            </div>
+            {hasActiveFilters && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => resetFilters()}
+                  className="text-sm text-primary font-medium hover:underline cursor-pointer"
+                >
+                  Reset filters
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

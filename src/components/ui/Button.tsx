@@ -6,7 +6,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   icon?: React.ReactNode;
   iconPlacement?: "left" | "right";
-  variant?: "primary" | "secondary" | "qualified" | "destructive";
+  variant?: "primary" | "secondary" | "blue" | "qualified" | "destructive";
 }
 
 /**
@@ -28,6 +28,7 @@ export function Button({
   const variantStyles = {
     primary: "bg-primary text-white shadow-primary/20 hover:shadow-primary/40",
     secondary: "bg-white text-ternary border border-border hover:bg-off-white active:bg-primary active:text-white focus:bg-primary focus:text-white transition-colors",
+    blue: "bg-blue text-white hover:opacity-90 transition-opacity",
     qualified: "bg-success-bg text-success-text border border-success-border hover:bg-green-100/50",
     destructive: "bg-error-bg text-error-text border border-error-border hover:bg-red-100/50",
   };
