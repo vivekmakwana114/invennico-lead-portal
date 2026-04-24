@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(req: Request) {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY is not configured in environment variables" },
+      { error: "ANTHROPIC_API_KEY is not configured in environment variables" },
       { status: 500 }
     );
   }
@@ -63,24 +63,22 @@ RULES:
 - Think like a CTO + sales strategist
 - Return ONLY the JSON object`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 1500,
-        responseMimeType: "application/json",
-      },
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const message = await client.messages.create({
+      // model: "claude-sonnet-4-6",
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const rawText = message.content[0].type === "text" ? message.content[0].text : "";
+    const jsonText = rawText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
 
-    return NextResponse.json(JSON.parse(text));
+    return NextResponse.json(JSON.parse(jsonText));
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("Gemini analyze error:", message);
+    console.error("Claude analyze error:", message);
     return NextResponse.json(
       { error: "Failed to analyze lead", detail: message },
       { status: 500 }

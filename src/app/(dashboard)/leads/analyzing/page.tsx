@@ -121,7 +121,7 @@ export default function AnalyzingPage() {
 
       } catch (err) {
         console.error(err);
-        if (!isCancelled) setError("Failed to analyze lead. Please check your OpenAI API key and model limits.");
+        if (!isCancelled) setError("Failed to analyze lead. Please check your ANTHROPIC_API_KEY and try again.");
       }
     }
 

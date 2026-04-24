@@ -2,13 +2,13 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Eye, SquarePen, Download, Clock, CircleCheck, FileText } from "lucide-react";
+import { Eye, SquarePen, Download, Clock, CircleCheck, FileText, Sparkles } from "lucide-react";
 import { type Column } from "@/components/ui/GridComponent";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type LeadTag = "crm-synced" | "crm-pending" | "proposal-synced";
+export type LeadTag = "crm-synced" | "crm-pending" | "proposal-synced" | "poc";
 export type LeadStatus =
   | "qualified"
   | "under-review"
@@ -38,6 +38,7 @@ function TagList({ tags }: { tags: LeadTag[] }) {
     "crm-synced": { label: "CRM Synced", icon: <CircleCheck size={12} />, className: "bg-success-bg text-success-text" },
     "crm-pending": { label: "CRM Pending", icon: <Clock size={12} />, className: "bg-yellow-50 text-yellow-600" },
     "proposal-synced": { label: "Proposal Synced", icon: <FileText size={12} />, className: "bg-blue-50 text-blue-600" },
+    "poc": { label: "AI Analyzed", icon: <Sparkles size={12} />, className: "bg-primary/10 text-primary" },
   };
   return (
     <div className="flex flex-wrap gap-1 mt-1">

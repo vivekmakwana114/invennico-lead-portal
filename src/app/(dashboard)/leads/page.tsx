@@ -44,6 +44,8 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const filterPanelRef = useRef<HTMLDivElement>(null);
+  
+  const [leadsList, setLeadsList] = useState(ALL_LEADS);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -54,6 +56,38 @@ export default function LeadsPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    async function loadSessionLeads() {
+      const pocLeads: any[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith("lead_LD-POC-") || key?.startsWith("lead_POC-")) {
+          try {
+            const pocData = JSON.parse(sessionStorage.getItem(key)!);
+            pocLeads.push({
+              id: pocData.id,
+              projectName: pocData.fullProjectName || "Untitled Project",
+              tags: ["poc"],
+              source: pocData.source || "Direct",
+              dateReceived: pocData.dateReceived || new Date().toISOString().split("T")[0],
+              status: pocData.status || "new",
+              budget: pocData.budget || "N/A",
+              timeline: pocData.timeline || "N/A",
+              proposal: "Not Started",
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+      if (pocLeads.length > 0) {
+        setLeadsList([...pocLeads, ...ALL_LEADS]);
+      }
+    }
+    loadSessionLeads();
+  }, []);
+  
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("All");
   const [dateRange, setDateRange] = useState("7");
@@ -63,14 +97,14 @@ export default function LeadsPage() {
     const days = parseInt(dateRange, 10);
     const cutoff = days > 0 ? new Date(Date.now() - days * 86_400_000) : null;
 
-    return ALL_LEADS.filter((l) => {
+    return leadsList.filter((l) => {
       if (q && !l.id.toLowerCase().includes(q) && !l.projectName.toLowerCase().includes(q) && !l.source.toLowerCase().includes(q)) return false;
       if (statusFilter !== "all" && l.status !== (statusFilter as LeadStatus)) return false;
       if (sourceFilter !== "All" && l.source !== sourceFilter) return false;
       if (cutoff && new Date(l.dateReceived) < cutoff) return false;
       return true;
     });
-  }, [search, statusFilter, sourceFilter, dateRange]);
+  }, [search, statusFilter, sourceFilter, dateRange, leadsList]);
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -95,10 +129,10 @@ export default function LeadsPage() {
 
   const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "All" || dateRange !== "7";
 
-  const totalLeads = ALL_LEADS.length;
-  const qualifiedCount = ALL_LEADS.filter((l) => l.status === "qualified").length;
-  const proposalCount = ALL_LEADS.filter((l) => l.status === "proposal-sent").length;
-  const wonCount = ALL_LEADS.filter((l) => l.status === "won").length;
+  const totalLeads = leadsList.length;
+  const qualifiedCount = leadsList.filter((l) => l.status === "qualified").length;
+  const proposalCount = leadsList.filter((l) => l.status === "proposal-sent").length;
+  const wonCount = leadsList.filter((l) => l.status === "won").length;
 
   return (
     <div className="space-y-6">

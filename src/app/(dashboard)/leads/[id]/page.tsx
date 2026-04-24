@@ -51,18 +51,21 @@ export default function LeadViewPage() {
   const [proposalOpen, setProposalOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      const pocData = sessionStorage.getItem(`lead_${id}`);
-      if (pocData) {
-        setLead(JSON.parse(pocData) as LeadDetail);
-      } else {
-        setLead(getLeadDetail(decodeURIComponent(id)));
+    async function loadLead() {
+      try {
+        const pocData = sessionStorage.getItem(`lead_${id}`);
+        if (pocData) {
+          setLead(JSON.parse(pocData) as LeadDetail);
+        } else {
+          setLead(getLeadDetail(decodeURIComponent(id)));
+        }
+      } catch {
+        setLead(null);
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setLead(null);
-    } finally {
-      setLoading(false);
     }
+    loadLead();
   }, [id]);
 
   if (loading) {
