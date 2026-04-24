@@ -41,7 +41,7 @@ export function WhatsAppReplyModal({ isOpen, onClose, lead }: WhatsAppReplyModal
             tech_stack: lead.techStack ? Object.values(lead.techStack).flat().join(", ") : "N/A",
             timeline: lead.timeline,
             budget: lead.budget,
-            original_lead: lead.originalLeadDetails || lead.leadSummary
+            original_lead: lead.leadSummary
           })
         });
         if (!res.ok) throw new Error("API failed");
