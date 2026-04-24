@@ -32,27 +32,27 @@ export default function DashboardPage() {
           <h3 className="text-2xl font-bold text-foreground">Pre-Sales Dashboard</h3>
           <p className="text-sm text-ternary font-medium mt-1">Track lead qualification and proposal automation metrics</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            label="Today" 
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            label="Today"
             variant="secondary"
             onClick={() => console.log("Today")}
             className="h-9 px-4 text-sm"
           />
-          <Button 
-            label="This Week" 
+          <Button
+            label="This Week"
             variant="secondary"
             onClick={() => console.log("This Week")}
-            className="h-9 px-4 text-sm"  
+            className="h-9 px-4 text-sm"
           />
-          <Button 
-            label="This Month" 
+          <Button
+            label="This Month"
             variant="secondary"
             onClick={() => console.log("This Month")}
             className="h-9 px-4 text-sm"
           />
-          <Button 
-            label="This Year" 
+          <Button
+            label="This Year"
             variant="secondary"
             onClick={() => console.log("This Year")}
             className="h-9 px-4 text-sm"
