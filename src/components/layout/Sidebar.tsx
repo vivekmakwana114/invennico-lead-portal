@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Settings, ChevronRight, X } from "lucide-react";
+import { LayoutDashboard, Users, Settings, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -109,17 +109,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* User Profile */}
         <div className="p-4 border-t border-border mt-auto shrink-0">
-          <div className="flex items-center justify-between p-2 rounded-xl hover:bg-off-white transition-colors cursor-pointer group">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm shrink-0">
-                AD
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-bold text-foreground truncate">Admin User</p>
-                <p className="text-[10px] text-ternary truncate">admin@invennico.com</p>
-              </div>
+          <p className="text-sm font-medium text-ternary px-2 mb-2">Current User</p>
+          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-off-white transition-colors">
+            <div className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm shrink-0">
+              VM
             </div>
-            <ChevronRight size={16} className="text-ternary group-hover:text-foreground shrink-0" />
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-foreground truncate">Vivek Makwana</p>
+              <p className="text-xs text-ternary truncate">admin@invennico.com</p>
+            </div>
           </div>
         </div>
       </aside>
