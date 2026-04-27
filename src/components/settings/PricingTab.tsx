@@ -40,18 +40,18 @@ function RateRow({
   last: boolean;
 }) {
   return (
-    <div className={cn("flex items-center gap-4 py-3", !last && "border-b border-border")}>
+    <div className={cn("flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 py-3", !last && "border-b border-border")}>
       <span className="flex-1 text-sm text-foreground">{role}</span>
-      <div className="flex items-center gap-1 w-56">
-        <span className="text-sm text-ternary">$</span>
+      <div className="flex items-center gap-1.5 w-full sm:w-56">
+        <span className="text-sm text-ternary shrink-0">$</span>
         <input
           type="number"
           min={0}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 px-3 py-1.5 border border-border rounded-lg text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          className="flex-1 min-w-0 px-3 py-1.5 border border-border rounded-lg text-sm text-foreground bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         />
-        <span className="text-sm text-ternary w-10 text-right">/hour</span>
+        <span className="text-sm text-ternary shrink-0">/hr</span>
       </div>
     </div>
   );

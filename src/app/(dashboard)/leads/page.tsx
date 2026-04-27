@@ -90,7 +90,7 @@ export default function LeadsPage() {
   
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("All");
-  const [dateRange, setDateRange] = useState("7");
+  const [dateRange, setDateRange] = useState("0");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -123,11 +123,11 @@ export default function LeadsPage() {
   function resetFilters() {
     setStatusFilter("all");
     setSourceFilter("All");
-    setDateRange("7");
+    setDateRange("0");
     setCurrentPage(1);
   }
 
-  const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "All" || dateRange !== "7";
+  const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "All" || dateRange !== "0";
 
   const totalLeads = leadsList.length;
   const qualifiedCount = leadsList.filter((l) => l.status === "qualified").length;
