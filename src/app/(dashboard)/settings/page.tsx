@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Key, DollarSign, FileText, Users } from "lucide-react";
+import { Key, DollarSign, FileText, Users, Sparkles } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { IntegrationsTab } from "@/components/settings/IntegrationsTab";
 import { PricingTab } from "@/components/settings/PricingTab";
 import { ScopeTab } from "@/components/settings/ScopeTab";
+import { PromptTab } from "@/components/settings/PromptTab";
 import { UserManagementTab } from "@/components/settings/UserManagementTab";
 import { useAppSelector } from "@/state/hooks";
 
@@ -19,6 +20,7 @@ const tabs = [
   { id: "integrations", label: "Integrations", icon: Key },
   { id: "pricing", label: "Pricing Logic", icon: DollarSign },
   { id: "scope", label: "Scope Document Template", icon: FileText },
+  { id: "prompt", label: "AI Prompt", icon: Sparkles },
   { id: "users", label: "User Management", icon: Users },
 ];
 
@@ -79,6 +81,7 @@ export default function SettingsPage() {
           {activeTab === "integrations" && <IntegrationsTab />}
           {activeTab === "pricing" && <PricingTab />}
           {activeTab === "scope" && <ScopeTab />}
+          {activeTab === "prompt" && <PromptTab />}
           {activeTab === "users" && <UserManagementTab />}
         </div>
       </div>

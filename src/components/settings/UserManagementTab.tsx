@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trash2, Plus, Check, X, Pencil } from "lucide-react";
+import { Trash2, Plus, Check, X, Pencil, Minus } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast } from "sonner";
@@ -18,6 +18,8 @@ interface TeamMember {
   email: string;
   role: string;
   status: "active" | "inactive";
+  totalCredits: number;
+  consumedCredits: number;
 }
 
 interface NewUser {
@@ -25,13 +27,13 @@ interface NewUser {
   email: string;
   role: string;
   status: "active" | "inactive";
+  totalCredits: number;
+  consumedCredits: number;
 }
 
 const roleOptions = [
   { label: "Admin", value: "admin" },
-  { label: "Sales Manager", value: "sales-manager" },
-  { label: "Team Member", value: "team-member" },
-  { label: "Viewer", value: "viewer" },
+  { label: "Partner", value: "partner" },
 ];
 
 const statusOptions = [
@@ -40,10 +42,10 @@ const statusOptions = [
 ];
 
 const initialMembers: TeamMember[] = [
-  { id: "1", name: "Rahul Sharma", email: "rahul@invennico.com", role: "admin", status: "active" },
-  { id: "2", name: "Priya Patel", email: "priya@invennico.com", role: "team-member", status: "active" },
-  { id: "3", name: "Amit Kumar", email: "amit@invennico.com", role: "team-member", status: "active" },
-  { id: "4", name: "Neha Gupta", email: "neha@invennico.com", role: "viewer", status: "inactive" },
+  { id: "1", name: "Rahul Sharma", email: "rahul@invennico.com", role: "admin", status: "active", totalCredits: 100, consumedCredits: 42 },
+  { id: "2", name: "Priya Patel", email: "priya@invennico.com", role: "partner", status: "active", totalCredits: 50, consumedCredits: 12 },
+  { id: "3", name: "Amit Kumar", email: "amit@invennico.com", role: "partner", status: "active", totalCredits: 50, consumedCredits: 5 },
+  { id: "4", name: "Neha Gupta", email: "neha@invennico.com", role: "partner", status: "inactive", totalCredits: 0, consumedCredits: 0 },
 ];
 
 
@@ -89,8 +91,24 @@ export function UserManagementTab() {
     setMembers((prev) => prev.filter((m) => m.id !== id));
   }
 
+  function handleIncrementCredits(id: string) {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, totalCredits: m.totalCredits + 1 } : m))
+    );
+  }
+
+  function handleDecrementCredits(id: string) {
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? { ...m, totalCredits: Math.max(m.consumedCredits, m.totalCredits - 1) }
+          : m
+      )
+    );
+  }
+
   function handleAddUser() {
-    setNewUser({ name: "", email: "", role: "team-member", status: "active" });
+    setNewUser({ name: "", email: "", role: "partner", status: "active", totalCredits: 50, consumedCredits: 0 });
   }
 
   function handleSaveNewUser() {
@@ -103,7 +121,7 @@ export function UserManagementTab() {
     setNewUser(null);
   }
 
-  const colGrid = "grid-cols-[2fr_2fr_1.5fr_1fr_0.8fr]";
+  const colGrid = "grid-cols-[1.8fr_2fr_1.2fr_1fr_1.1fr_1.4fr_0.7fr]";
 
   return (
     <div className="space-y-6">
@@ -128,10 +146,10 @@ export function UserManagementTab() {
 
         {/* Table */}
         <div className="overflow-x-auto rounded-xl border border-border">
-        <div className="min-w-[680px]">
+        <div className="min-w-[1000px]">
           {/* Header */}
-          <div className={cn("grid px-4 py-3 bg-gray-50 border-b border-border rounded-tl-xl rounded-tr-xl", colGrid)}>
-            {["Name", "Email", "Role", "Status", "Actions"].map((col) => (
+          <div className={cn("grid gap-3 px-4 py-3 bg-gray-50 border-b border-border rounded-tl-xl rounded-tr-xl", colGrid)}>
+            {["Name", "Email", "Role", "Status", "Used Credits", "Total Credits", "Actions"].map((col) => (
               <span key={col} className="text-xs font-semibold text-ternary uppercase tracking-wide">
                 {col}
               </span>
@@ -186,7 +204,7 @@ export function UserManagementTab() {
                   options={roleOptions}
                   value={member.role}
                   onChange={(role) => handleRoleChange(member.id, role)}
-                  className="w-36"
+                  className="w-full"
                 />
 
                 {/* Status */}
@@ -194,8 +212,40 @@ export function UserManagementTab() {
                   options={statusOptions}
                   value={member.status}
                   onChange={(status) => handleStatusChange(member.id, status)}
-                  className="w-28"
+                  className="w-full"
                 />
+
+                {/* Credits Used */}
+                <div className="flex items-center">
+                  <span className="text-sm font-semibold text-ternary px-1">
+                    {member.consumedCredits} used
+                  </span>
+                </div>
+
+                {/* Allocated Credits */}
+                <div className="flex items-center">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleDecrementCredits(member.id)}
+                      className="w-6 h-6 flex items-center justify-center border border-border text-ternary hover:text-foreground hover:bg-gray-50 rounded transition-colors cursor-pointer"
+                      title="Decrease credits by 1"
+                    >
+                      <Minus size={11} />
+                    </button>
+                    <span className="text-sm font-bold text-foreground min-w-[2rem] text-center">
+                      {member.totalCredits}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleIncrementCredits(member.id)}
+                      className="w-6 h-6 flex items-center justify-center border border-border text-ternary hover:text-foreground hover:bg-gray-50 rounded transition-colors cursor-pointer"
+                      title="Increase credits by 1"
+                    >
+                      <Plus size={11} />
+                    </button>
+                  </div>
+                </div>
 
                 {/* Actions */}
                 {isEditing ? (
@@ -259,14 +309,45 @@ export function UserManagementTab() {
                 options={roleOptions}
                 value={newUser.role}
                 onChange={(role) => setNewUser({ ...newUser, role })}
-                className="w-36"
+                className="w-full"
               />
               <Dropdown
                 options={statusOptions}
                 value={newUser.status}
                 onChange={(status) => setNewUser({ ...newUser, status: status as "active" | "inactive" })}
-                className="w-28"
+                className="w-full"
               />
+              {/* Credits Used */}
+              <div className="flex items-center">
+                <span className="text-sm font-semibold text-ternary px-1">
+                  0 used
+                </span>
+              </div>
+
+              {/* Allocated Credits */}
+              <div className="flex items-center">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setNewUser(prev => prev ? { ...prev, totalCredits: Math.max(0, prev.totalCredits - 1) } : null)}
+                    className="w-6 h-6 flex items-center justify-center border border-border text-ternary hover:text-foreground hover:bg-gray-50 rounded transition-colors cursor-pointer"
+                    title="Decrease default credits by 1"
+                  >
+                    <Minus size={11} />
+                  </button>
+                  <span className="text-sm font-bold text-foreground min-w-[2rem] text-center">
+                    {newUser.totalCredits}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setNewUser(prev => prev ? { ...prev, totalCredits: prev.totalCredits + 1 } : null)}
+                    className="w-6 h-6 flex items-center justify-center border border-border text-ternary hover:text-foreground hover:bg-gray-50 rounded transition-colors cursor-pointer"
+                    title="Increase default credits by 1"
+                  >
+                    <Plus size={11} />
+                  </button>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
