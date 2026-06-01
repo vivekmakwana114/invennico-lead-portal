@@ -6,12 +6,22 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import {
+  sendForgotPassword,
+  performVerifyOtp,
+  performResetPassword,
+  resetStatus,
+} from "@/state/auth/authSlice";
 
 /**
  * ForgotPasswordPage - A 3-step workflow for password recovery.
  * Uses Step-wise state to guide the user through Email, OTP, and Reset.
  */
 export default function ForgotPasswordPage() {
+  const dispatch = useAppDispatch();
+  const { status, verifyOtpStatus, resetStatus: authResetStatus } = useAppSelector((state) => state.auth);
+
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -20,7 +30,17 @@ export default function ForgotPasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+
+  const isLoading =
+    status === "loading" ||
+    verifyOtpStatus === "loading" ||
+    authResetStatus === "loading";
+
+  // Reset auth status on mount
+  useEffect(() => {
+    dispatch(resetStatus());
+  }, [dispatch]);
 
   // Validation Logic
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,42 +62,79 @@ export default function ForgotPasswordPage() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isEmailValid) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-      setTimer(15);
-      toast.info("OTP Sent!", { description: `Check your email: ${email}` });
-    }, 1200);
+
+    try {
+      const resultAction = await dispatch(sendForgotPassword(email));
+      if (sendForgotPassword.fulfilled.match(resultAction)) {
+        setStep(2);
+        setTimer(15);
+        toast.info("OTP Sent!", { description: `Check your email: ${email}` });
+      } else {
+        const errorMsg =
+          (resultAction.payload as any)?.message ||
+          (resultAction.payload as string) ||
+          "Failed to send verification code. Please try again.";
+        toast.error("Error", { description: errorMsg });
+      }
+    } catch (err: any) {
+      toast.error("Error", { description: "An unexpected error occurred." });
+    }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isOtpValid) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(3);
-      toast.success("OTP Verified successfully.");
-    }, 1000);
+
+    const otpCode = otp.join("");
+    try {
+      const resultAction = await dispatch(
+        performVerifyOtp({ email, otp: otpCode })
+      );
+      if (performVerifyOtp.fulfilled.match(resultAction)) {
+        const payloadData = resultAction.payload?.data || resultAction.payload || {};
+        // Retrieve resetToken or use the verification response value, or fallback to the OTP code
+        const token = payloadData.token || payloadData.resetToken || otpCode;
+        setResetToken(token);
+        setStep(3);
+        toast.success("OTP Verified successfully.");
+      } else {
+        const errorMsg =
+          (resultAction.payload as any)?.message ||
+          (resultAction.payload as string) ||
+          "Invalid or expired OTP. Please try again.";
+        toast.error("Verification Failed", { description: errorMsg });
+      }
+    } catch (err: any) {
+      toast.error("Verification Failed", { description: "An unexpected error occurred." });
+    }
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isPasswordValid || !doPasswordsMatch) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Password Reset Successful", { 
-        description: "Your password has been updated. Please sign in with your new password." 
-      });
-      // Redirect to login will happen naturally if the user clicks a button, 
-      // but here we show a success state or just redirect.
-      setStep(4);
-    }, 1500);
+
+    try {
+      const resultAction = await dispatch(
+        performResetPassword({ token: resetToken, password: newPassword })
+      );
+      if (performResetPassword.fulfilled.match(resultAction)) {
+        toast.success("Password Reset Successful", {
+          description: "Your password has been updated. Please sign in with your new password.",
+        });
+        setStep(4);
+      } else {
+        const errorMsg =
+          (resultAction.payload as any)?.message ||
+          (resultAction.payload as string) ||
+          "Failed to reset password. Please try again.";
+        toast.error("Reset Failed", { description: errorMsg });
+      }
+    } catch (err: any) {
+      toast.error("Reset Failed", { description: "An unexpected error occurred." });
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {

@@ -1,12 +1,34 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FeatureCard } from "@/components/auth/FeatureCard";
+import { useAppSelector } from "@/state/hooks";
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const { tokens, user } = useAppSelector((state) => state.auth);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && tokens && user) {
+      router.replace("/dashboard");
+    }
+  }, [isMounted, tokens, user, router]);
+
+  if (!isMounted || (tokens && user)) {
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col md:flex-row bg-white overflow-y-auto">
       {/* Left Section - Marketing (Shared Layout) */}

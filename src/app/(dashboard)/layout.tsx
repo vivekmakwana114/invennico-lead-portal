@@ -1,15 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { useAppSelector } from "@/state/hooks";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const { tokens, user } = useAppSelector((state) => state.auth);
+  const [isMounted, setIsMounted] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Set isMounted to true on client-side load
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Protect route group
+  useEffect(() => {
+    if (isMounted && (!tokens || !user)) {
+      router.replace("/login");
+    }
+  }, [isMounted, tokens, user, router]);
+
+  // Prevent flash of secure content during server render/client hydration
+  if (!isMounted || !tokens || !user) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-off-white overflow-hidden">

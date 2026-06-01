@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Key, DollarSign, FileText, Users } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -8,6 +9,7 @@ import { IntegrationsTab } from "@/components/settings/IntegrationsTab";
 import { PricingTab } from "@/components/settings/PricingTab";
 import { ScopeTab } from "@/components/settings/ScopeTab";
 import { UserManagementTab } from "@/components/settings/UserManagementTab";
+import { useAppSelector } from "@/state/hooks";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,7 +23,19 @@ const tabs = [
 ];
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const role = useAppSelector((state) => state.auth.user?.role);
   const [activeTab, setActiveTab] = useState("integrations");
+
+  useEffect(() => {
+    if (role && role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [role, router]);
+
+  if (!role || role !== "admin") {
+    return null;
+  }
 
   return (
     <div className="space-y-6 pb-12">

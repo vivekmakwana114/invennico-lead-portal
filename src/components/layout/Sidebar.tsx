@@ -7,15 +7,16 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Settings, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useAppSelector } from "@/state/hooks";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Leads",     href: "/leads",     icon: Users },
-  { label: "Settings",  href: "/settings",  icon: Settings },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+  { label: "Leads",     href: "/leads",     icon: Users,           adminOnly: false },
+  { label: "Settings",  href: "/settings",  icon: Settings,        adminOnly: true  },
 ];
 
 interface SidebarProps {
@@ -25,6 +26,8 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const role = useAppSelector((state) => state.auth.user?.role);
+  const visibleNavItems = navItems.filter((item) => !item.adminOnly || role === "admin");
 
   return (
     <>
@@ -78,7 +81,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/" && pathname?.startsWith(item.href));

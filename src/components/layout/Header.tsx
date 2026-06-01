@@ -3,6 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Menu, User, LogOut } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import { logout } from "@/state/auth/authSlice";
+import { getInitials } from "@/lib/utils";
 
 const PAGE_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
@@ -20,6 +23,9 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +36,10 @@ export function Header({ onMenuClick }: HeaderProps) {
     const last = pathSegments[pathSegments.length - 1];
     return PAGE_TITLES[last] ?? (last.charAt(0).toUpperCase() + last.slice(1));
   };
+
+  const displayName = user?.name || "Vivek Makwana";
+  const displayEmail = user?.email || "admin@invennico.com";
+  const initials = getInitials(displayName);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -43,6 +53,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   function handleLogout() {
     setMenuOpen(false);
+    dispatch(logout());
     router.push("/login");
   }
 
@@ -88,15 +99,15 @@ export function Header({ onMenuClick }: HeaderProps) {
             onClick={() => setMenuOpen((v) => !v)}
             className="w-8 h-8 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
           >
-            VM
+            {initials}
           </button>
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-50">
               {/* User info */}
               <div className="px-4 py-3 border-b border-border">
-                <p className="text-sm font-semibold text-foreground truncate">Vivek Makwana</p>
-                <p className="text-xs text-ternary truncate">admin@invennico.com</p>
+                <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                <p className="text-xs text-ternary truncate">{displayEmail}</p>
               </div>
 
               {/* Options */}
