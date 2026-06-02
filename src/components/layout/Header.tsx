@@ -3,14 +3,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Menu, User, LogOut } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import { logout } from "@/state/auth/authSlice";
+import { getInitials } from "@/lib/utils";
+import { BASE_URL } from "@/lib/api";
 
 const PAGE_TITLES: Record<string, string> = {
   dashboard: "Dashboard",
-  leads:     "Leads",
-  create:    "Create New Lead",
+  leads: "Leads",
+  create: "Create New Lead",
   analyzing: "Analyzing Lead",
-  settings:  "Settings",
-  profile:   "My Profile",
+  settings: "Settings",
+  profile: "My Profile",
 };
 
 interface HeaderProps {
@@ -20,6 +24,10 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const profileAvatar = useAppSelector((state) => state.users.profile?.avatar);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -28,8 +36,16 @@ export function Header({ onMenuClick }: HeaderProps) {
   const getPageTitle = () => {
     if (pathSegments.length === 0) return "Dashboard";
     const last = pathSegments[pathSegments.length - 1];
-    return PAGE_TITLES[last] ?? (last.charAt(0).toUpperCase() + last.slice(1));
+    return PAGE_TITLES[last] ?? last.charAt(0).toUpperCase() + last.slice(1);
   };
+
+  const displayName = user?.name ?? "";
+  const displayEmail = user?.email ?? "";
+  const initials = getInitials(displayName);
+  const avatarSrc =
+    profileAvatar || user?.avatar
+      ? `${BASE_URL}${profileAvatar || user?.avatar}`
+      : null;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -43,6 +59,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   function handleLogout() {
     setMenuOpen(false);
+    dispatch(logout());
     router.push("/login");
   }
 
@@ -82,21 +99,35 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         {/* Avatar + dropdown */}
-        <div ref={menuRef} className="relative flex items-center gap-3 sm:pl-4 sm:border-l sm:border-border">
+        <div
+          ref={menuRef}
+          className="relative flex items-center gap-3 sm:pl-4 sm:border-l sm:border-border"
+        >
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="w-8 h-8 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
+            className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all overflow-hidden"
           >
-            VM
+       {avatarSrc ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarSrc}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              initials
+            )}
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-border rounded-xl shadow-lg overflow-hidden z-50">
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-border rounded-xl shadow-lg z-50">
               {/* User info */}
-              <div className="px-4 py-3 border-b border-border">
-                <p className="text-sm font-semibold text-foreground truncate">Vivek Makwana</p>
-                <p className="text-xs text-ternary truncate">admin@invennico.com</p>
+              <div className="px-3 py-3 border-b border-border">
+                <p className="text-sm font-semibold text-foreground">
+                  {displayName}
+                </p>
+                <p className="text-xs text-ternary">{displayEmail}</p>
               </div>
 
               {/* Options */}

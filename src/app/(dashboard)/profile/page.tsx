@@ -1,10 +1,27 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Camera, Mail, Phone, Briefcase, MapPin, Building2, Calendar, Lock } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Camera,
+  Mail,
+  Phone,
+  Briefcase,
+  MapPin,
+  Building2,
+  Calendar,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
-import Image from "next/image";
+import { useAppSelector, useAppDispatch } from "@/state/hooks";
+import {
+  fetchProfile,
+  updateUserProfile,
+  changeUserPassword,
+  uploadUserAvatar,
+} from "@/state/users/usersSlice";
+import { BASE_URL } from "@/lib/api";
 
 interface ProfileForm {
   name: string;
@@ -15,22 +32,46 @@ interface ProfileForm {
   location: string;
 }
 
-const defaultProfile: ProfileForm = {
-  name: "Vivek Makwana",
-  email: "admin@invennico.com",
-  role: "Admin",
-  phone: "+1 (555) 000-0000",
-  department: "Administrator", 
-  location: "Ahmedabad, India",
-};
-
 export default function ProfilePage() {
-  const [form, setForm] = useState<ProfileForm>(defaultProfile);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { profile, isLoading, actionLoading } = useAppSelector(
+    (state) => state.users,
+  );
+
+  const [form, setForm] = useState<ProfileForm>({
+    name: "",
+    email: "",
+    role: "",
+    phone: "",
+    department: "",
+    location: "",
+  });
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        name: profile.name || "",
+        email: profile.email || "",
+        role: profile.role || "",
+        phone: profile.phone || "",
+        department: profile.department || "",
+        location: profile.location || "",
+      });
+    }
+  }, [profile]);
 
   function handleChange(field: keyof ProfileForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -39,15 +80,39 @@ export default function ProfilePage() {
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setAvatarUrl(url);
+    setPendingFile(file);
+    setPendingPreview(URL.createObjectURL(file));
   }
 
-  function handleSave() {
-    toast.success("Profile updated successfully.");
+  async function handleSave() {
+    if (pendingFile) {
+      const avatarResult = await dispatch(uploadUserAvatar(pendingFile));
+      if (uploadUserAvatar.rejected.match(avatarResult)) {
+        toast.error(
+          (avatarResult.payload as string) || "Failed to upload avatar.",
+        );
+        return;
+      }
+      setPendingFile(null);
+      setPendingPreview(null);
+    }
+
+    const result = await dispatch(
+      updateUserProfile({
+        name: form.name,
+        phone: form.phone || null,
+        department: form.department || null,
+        location: form.location || null,
+      }),
+    );
+    if (updateUserProfile.fulfilled.match(result)) {
+      toast.success("Profile updated successfully.");
+    } else {
+      toast.error((result.payload as string) || "Failed to update profile.");
+    }
   }
 
-  function handleUpdatePassword() {
+  async function handleUpdatePassword() {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("Please fill in all password fields.");
       return;
@@ -56,10 +121,41 @@ export default function ProfilePage() {
       toast.error("New passwords do not match.");
       return;
     }
-    toast.success("Password updated successfully.");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    const result = await dispatch(
+      changeUserPassword({ currentPassword, newPassword }),
+    );
+    if (changeUserPassword.fulfilled.match(result)) {
+      toast.success("Password updated successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } else {
+      toast.error((result.payload as string) || "Failed to update password.");
+    }
+  }
+
+  const savedAvatarUrl = profile?.avatar
+    ? `${BASE_URL}${profile.avatar}`
+    : null;
+  const displayAvatar = pendingPreview || savedAvatarUrl;
+
+  const joinedDate = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
+  const displayRole = form.role
+    ? form.role.charAt(0).toUpperCase() + form.role.slice(1)
+    : "";
+
+  if (isLoading && !profile) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -78,10 +174,15 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-              {avatarUrl ? (
-                <Image src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              {displayAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={displayAvatar}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                getInitials(form.name)
+                getInitials(form.name || "U")
               )}
             </div>
             <button
@@ -102,41 +203,49 @@ export default function ProfilePage() {
 
           <div>
             <p className="text-base font-bold text-foreground">{form.name}</p>
-            <p className="text-sm text-ternary">{form.role}</p>
+            <p className="text-sm text-ternary">{displayRole}</p>
           </div>
 
           {/* Quick stats */}
           <div className="w-full border-t border-border pt-4 space-y-3 text-left">
             <div className="flex items-center gap-2.5 text-sm text-ternary">
               <Mail size={14} className="shrink-0" />
-              <span className="truncate">{form.email}</span>
+              <span>{form.email}</span>
             </div>
             <div className="flex items-center gap-2.5 text-sm text-ternary">
               <Building2 size={14} className="shrink-0" />
-              <span>{form.department}</span>
+              <span>{form.department || "—"}</span>
             </div>
             <div className="flex items-center gap-2.5 text-sm text-ternary">
               <MapPin size={14} className="shrink-0" />
-              <span>{form.location}</span>
+              <span>{form.location || "—"}</span>
             </div>
-            <div className="flex items-center gap-2.5 text-sm text-ternary">
-              <Calendar size={14} className="shrink-0" />
-              <span>Joined Jan 2025</span>
-            </div>
+            {joinedDate && (
+              <div className="flex items-center gap-2.5 text-sm text-ternary">
+                <Calendar size={14} className="shrink-0" />
+                <span>Joined {joinedDate}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right: Form */}
         <div className="border border-border rounded-xl bg-white p-6 space-y-6">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Personal Information</h2>
-            <p className="text-sm text-ternary mt-1">Update your profile details below</p>
+            <h2 className="text-base font-semibold text-foreground">
+              Personal Information
+            </h2>
+            <p className="text-sm text-ternary mt-1">
+              Update your profile details below
+            </p>
           </div>
 
           {/* Name + Role */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-foreground">Full Name</label>
+              <label className="text-sm font-semibold text-foreground">
+                Full Name
+              </label>
               <input
                 type="text"
                 value={form.name}
@@ -146,13 +255,13 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Briefcase size={13} className="text-ternary" /> Role / Position
+                <Briefcase size={13} className="text-ternary" /> Role
               </label>
               <input
                 type="text"
-                value={form.role}
-                onChange={(e) => handleChange("role", e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                value={displayRole}
+                readOnly
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-gray-50 text-ternary cursor-not-allowed"
               />
             </div>
           </div>
@@ -166,8 +275,8 @@ export default function ProfilePage() {
               <input
                 type="email"
                 value={form.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                readOnly
+                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-gray-50 text-ternary cursor-not-allowed"
               />
             </div>
             <div className="space-y-1.5">
@@ -214,49 +323,85 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+              disabled={actionLoading}
+              className="px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
             >
-              Save Changes
+              {actionLoading ? "Saving..." : "Save Changes"}
             </button>
           </div>
 
-          {/* Divider */}
+          {/* Change Password */}
           <div className="border-t border-border pt-6">
-            <div className="flex items-center gap-2 mb-5">
-              <h2 className="text-base font-semibold text-foreground">Change Password</h2>
-            </div>
-            <p className="text-sm text-ternary -mt-3 mb-5">Update your account password for security</p>
+            <h2 className="text-base font-semibold text-foreground mb-1">
+              Change Password
+            </h2>
+            <p className="text-sm text-ternary mb-5">
+              Update your account password for security
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-foreground">Current Password</label>
-                <input
-                  type="password"
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+                <label className="text-sm font-semibold text-foreground">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCurrent ? "text" : "password"}
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 py-2 pr-9 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent((v) => !v)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-ternary hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-foreground">New Password</label>
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+                <label className="text-sm font-semibold text-foreground">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNew ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 pr-9 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNew((v) => !v)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-ternary hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-foreground">Confirm New Password</label>
-                <input
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                />
+                <label className="text-sm font-semibold text-foreground">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3 py-2 pr-9 text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm((v) => !v)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-ternary hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -264,9 +409,10 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={handleUpdatePassword}
-                className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+                disabled={actionLoading}
+                className="px-5 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
               >
-                Update Password
+                {actionLoading ? "Updating..." : "Update Password"}
               </button>
             </div>
           </div>

@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { MOCK_USER } from "@/lib/constants";
 import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import { loginUser, resetStatus } from "@/state/auth/authSlice";
 
 /**
  * LoginPage with validation and feedback.
@@ -15,10 +16,27 @@ import { useRouter } from "next/navigation";
  */
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { status, error: authError, tokens, user } = useAppSelector((state) => state.auth);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  const isLoading = status === "loading";
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (tokens && user) {
+      router.replace("/dashboard");
+    }
+  }, [tokens, user, router]);
+
+  // Reset auth status on mount
+  useEffect(() => {
+    dispatch(resetStatus());
+  }, [dispatch]);
 
   // Validation Logic
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,29 +46,38 @@ export default function LoginPage() {
   const isPasswordValid = useMemo(() => passwordRegex.test(password), [password]);
   const isFormValid = isEmailValid && isPasswordValid;
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      if (email === MOCK_USER.email && password === MOCK_USER.password) {
+    try {
+      const resultAction = await dispatch(
+        loginUser({ identifier: email, password, rememberMe })
+      );
+
+      if (loginUser.fulfilled.match(resultAction)) {
         toast.success("Welcome back! Login Successful.", {
           description: "You are being redirected to your dashboard.",
           duration: 3000,
         });
-        router.push('/dashboard')
+        router.push("/dashboard");
       } else {
+        const errorMsg =
+          (resultAction.payload as any)?.message ||
+          (resultAction.payload as string) ||
+          "Invalid email or password. Please try again.";
+
         toast.error("Access Denied", {
-          description: "Invalid email or password. Please try again.",
+          description: errorMsg,
           className: "bg-error-bg text-error-text border-error-border",
         });
       }
-    }, 1500);
+    } catch (err: any) {
+      toast.error("Access Denied", {
+        description: "An unexpected error occurred. Please try again.",
+        className: "bg-error-bg text-error-text border-error-border",
+      });
+    }
   };
 
   return (
@@ -155,7 +182,12 @@ export default function LoginPage() {
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-2 cursor-pointer group">
               <div className="relative w-4 h-4 sm:w-5 sm:h-5 shrink-0">
-                <input type="checkbox" className="peer absolute opacity-0 w-full h-full cursor-pointer" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="peer absolute opacity-0 w-full h-full cursor-pointer"
+                />
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-300 rounded peer-checked:bg-primary peer-checked:border-primary transition-all duration-200" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 peer-checked:opacity-100 transition-opacity duration-200">
                   <div className="w-1 h-2 sm:w-1.5 sm:h-3 border-r-2 border-b-2 border-white rotate-45 mb-1" />
