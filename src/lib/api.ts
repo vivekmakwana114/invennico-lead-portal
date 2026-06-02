@@ -3,7 +3,7 @@ import axios from "axios";
 // Fallback to localhost if environment variable is not defined
 const RAW_BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:4000";
-const BASE_URL = RAW_BASE_URL.replace(/\/+$/g, "");
+export const BASE_URL = RAW_BASE_URL.replace(/\/+$/g, "");
 
 // Log API URL to verify correct backend connection
 console.log("Using API Base URL:", BASE_URL);

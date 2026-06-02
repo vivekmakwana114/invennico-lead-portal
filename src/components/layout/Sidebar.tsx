@@ -8,15 +8,22 @@ import { LayoutDashboard, Users, Settings, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAppSelector } from "@/state/hooks";
+import { getInitials } from "@/lib/utils";
+import { BASE_URL } from "@/lib/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
-  { label: "Leads",     href: "/leads",     icon: Users,           adminOnly: false },
-  { label: "Settings",  href: "/settings",  icon: Settings,        adminOnly: true  },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    adminOnly: false,
+  },
+  { label: "Leads", href: "/leads", icon: Users, adminOnly: false },
+  { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -26,8 +33,16 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const role = useAppSelector((state) => state.auth.user?.role);
-  const visibleNavItems = navItems.filter((item) => !item.adminOnly || role === "admin");
+  const user = useAppSelector((state) => state.auth.user);
+  const profileAvatar = useAppSelector((state) => state.users.profile?.avatar);
+  const role = user?.role;
+  const visibleNavItems = navItems.filter(
+    (item) => !item.adminOnly || role === "admin",
+  );
+  const avatarSrc =
+    profileAvatar || user?.avatar
+      ? `${BASE_URL}${profileAvatar || user?.avatar}`
+      : null;
 
   return (
     <>
@@ -35,7 +50,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div
         className={cn(
           "fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-300",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
       />
@@ -48,12 +65,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           "fixed top-0 left-0 h-full z-50 transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full",
           // Desktop: static, always visible
-          "lg:static lg:translate-x-0 lg:transition-none lg:z-auto lg:h-auto lg:shrink-0"
+          "lg:static lg:translate-x-0 lg:transition-none lg:z-auto lg:h-auto lg:shrink-0",
         )}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-border shrink-0">
-          <Link href="/dashboard" className="flex items-center gap-3" onClick={onClose}>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3"
+            onClick={onClose}
+          >
             <div className="w-10 h-10 bg-off-white border border-border rounded-xl flex items-center justify-center shadow-sm shrink-0">
               <Image
                 src="/assets/logo/Invennico.svg"
@@ -64,8 +85,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               />
             </div>
             <div>
-              <h2 className="font-bold text-sm leading-tight text-foreground">Invennico</h2>
-              <p className="text-[10px] text-ternary font-medium uppercase tracking-wider">Lead Portal</p>
+              <h2 className="font-bold text-sm leading-tight text-foreground">
+                Invennico
+              </h2>
+              <p className="text-[10px] text-ternary font-medium uppercase tracking-wider">
+                Lead Portal
+              </p>
             </div>
           </Link>
 
@@ -94,32 +119,47 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   "flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group",
                   isActive
                     ? "bg-primary/5 text-primary"
-                    : "text-ternary hover:bg-off-white hover:text-foreground"
+                    : "text-ternary hover:bg-off-white hover:text-foreground",
                 )}
               >
                 <div className="flex items-center gap-3">
                   <item.icon
                     size={20}
-                    className={cn(isActive ? "text-primary" : "group-hover:text-foreground")}
+                    className={cn(
+                      isActive ? "text-primary" : "group-hover:text-foreground",
+                    )}
                   />
                   <span className="font-semibold text-sm">{item.label}</span>
                 </div>
-                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                {isActive && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-border mt-auto shrink-0">
-          <p className="text-sm font-medium text-ternary px-2 mb-2">Current User</p>
-          <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-off-white transition-colors">
-            <div className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm shrink-0">
-              VM
+        <div className="p-2 border-t border-border mt-auto shrink-0">
+          <p className="text-sm font-medium text-ternary px-2 mb-2">
+            Current User
+          </p>
+          <div className="flex items-center gap-3 p-1 rounded-xl hover:bg-off-white transition-colors">
+            <div className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+              {avatarSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarSrc}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials(user?.name || "")
+              )}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold text-foreground truncate">Vivek Makwana</p>
-              <p className="text-xs text-ternary truncate">admin@invennico.com</p>
+            <div>
+              <p className="text-sm font-bold text-foreground">{user?.name}</p>
+              <p className="text-xs text-ternary">{user?.email}</p>
             </div>
           </div>
         </div>
