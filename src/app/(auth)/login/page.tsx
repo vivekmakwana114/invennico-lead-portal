@@ -60,7 +60,6 @@ export default function LoginPage() {
           description: "You are being redirected to your dashboard.",
           duration: 3000,
         });
-        router.push("/dashboard");
       } else {
         const errorMsg =
           (resultAction.payload as any)?.message ||

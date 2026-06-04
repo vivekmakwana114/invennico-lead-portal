@@ -35,6 +35,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const getPageTitle = () => {
     if (pathSegments.length === 0) return "Dashboard";
+    if (pathSegments[0] === "leads" && pathSegments.length === 2) return "Lead Detail";
     const last = pathSegments[pathSegments.length - 1];
     return PAGE_TITLES[last] ?? last.charAt(0).toUpperCase() + last.slice(1);
   };

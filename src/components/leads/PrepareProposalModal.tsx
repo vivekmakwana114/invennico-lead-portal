@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { X, FileText, FolderOpen, CheckCircle2, Database } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAppDispatch } from "@/state/hooks";
+import { updateLead } from "@/state/leads/leadsSlice";
 import type { LeadDetail } from "@/components/leads/LeadsDetailData";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ interface PrepareProposalModalProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalModalProps) {
+  const dispatch = useAppDispatch();
   const [proposalName, setProposalName] = useState(lead.fullProjectName);
   const [clientName, setClientName] = useState(lead.clientContact);
   const [budget, setBudget] = useState(lead.budget);
@@ -57,13 +60,22 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Animated progress bar during generation
+  // Animated progress bar during generation + status update
   useEffect(() => {
     if (phase !== "generating") return;
     const t1 = setTimeout(() => setBarProgress(85), 50);
     const t2 = setTimeout(() => setBarProgress(100), 1600);
-    const t3 = setTimeout(() => setPhase("success"), 1900);
+    const t3 = setTimeout(async () => {
+      await dispatch(
+        updateLead({
+          leadId: lead.id,
+          payload: { status: "proposal-sent", proposalDoc: { url: drivePath } },
+        })
+      );
+      setPhase("success");
+    }, 1900);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
   // Reset state when modal closes

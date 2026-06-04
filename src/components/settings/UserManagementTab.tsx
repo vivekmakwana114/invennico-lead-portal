@@ -165,7 +165,7 @@ export function UserManagementTab() {
             type="button"
             onClick={() => setNewUser({ name: "", email: "", role: "partner" })}
             disabled={actionLoading}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer shrink-0"
           >
             <Plus size={15} />
             Add User
@@ -226,7 +226,7 @@ export function UserManagementTab() {
                     />
                   ) : (
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold shrink-0">
                         {getInitials(member.name)}
                       </div>
                       <span className="text-sm font-medium text-foreground whitespace-nowrap">{member.name}</span>
@@ -273,7 +273,7 @@ export function UserManagementTab() {
                       <button
                         type="button"
                         onClick={decrement}
-                        className="w-6 h-6 flex items-center justify-center rounded border border-border bg-white hover:bg-off-white text-foreground text-sm font-semibold leading-none transition-colors cursor-pointer flex-shrink-0"
+                        className="w-6 h-6 flex items-center justify-center rounded border border-border bg-white hover:bg-off-white text-foreground text-sm font-semibold leading-none transition-colors cursor-pointer shrink-0"
                       >
                         −
                       </button>
@@ -304,7 +304,7 @@ export function UserManagementTab() {
                       <button
                         type="button"
                         onClick={increment}
-                        className="w-6 h-6 flex items-center justify-center rounded border border-border bg-white hover:bg-off-white text-foreground text-sm font-semibold leading-none transition-colors cursor-pointer flex-shrink-0"
+                        className="w-6 h-6 flex items-center justify-center rounded border border-border bg-white hover:bg-off-white text-foreground text-sm font-semibold leading-none transition-colors cursor-pointer shrink-0"
                       >
                         +
                       </button>
@@ -314,7 +314,7 @@ export function UserManagementTab() {
                         type="button"
                         onClick={() => confirmAssign(member.id)}
                         disabled={actionLoading}
-                        className="ml-1 text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors cursor-pointer flex-shrink-0"
+                        className="ml-1 text-green-600 hover:text-green-700 disabled:opacity-50 transition-colors cursor-pointer shrink-0"
                       >
                         <Check size={14} />
                       </button>
@@ -323,7 +323,7 @@ export function UserManagementTab() {
                       <button
                         type="button"
                         onClick={closeAssign}
-                        className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer flex-shrink-0"
+                        className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0"
                       >
                         <X size={14} />
                       </button>
