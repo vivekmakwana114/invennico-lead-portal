@@ -15,6 +15,7 @@ import { WhatsAppReplyModal } from "@/components/leads/WhatsAppReplyModal";
 import { PrepareProposalModal } from "@/components/leads/PrepareProposalModal";
 import { useAppDispatch, useAppSelector } from "@/state/hooks";
 import { fetchLead, updateLead, mapToLeadDetail, clearCurrentLead } from "@/state/leads/leadsSlice";
+import { leadsService } from "@/state/leads/leadsService";
 
 function scoreLabelColor(score: number) {
   if (score >= 80) return "text-success-text";
@@ -68,6 +69,22 @@ export default function LeadViewPage() {
 
   function handleStatusChange(status: string) {
     dispatch(updateLead({ leadId: rawLead.id, payload: { status } }));
+  }
+
+  async function handleDownloadProposal() {
+    try {
+      const res = await leadsService.downloadProposal(rawLead.id);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proposal-${lead.fullProjectName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // silently fail — button only visible when file exists
+    }
   }
 
   return (
@@ -162,6 +179,11 @@ export default function LeadViewPage() {
               <div>
                 <p className="text-sm text-ternary mb-1">Budget Range</p>
                 <p className="text-2xl font-bold text-primary">{lead.budget}</p>
+                {lead.aiBudgetRange && (
+                  <p className="text-xs text-ternary mt-1">
+                    AI estimate: <span className="font-medium">{lead.aiBudgetRange}</span>
+                  </p>
+                )}
               </div>
             </div>
             {milestones.length > 0 && (
@@ -248,11 +270,27 @@ export default function LeadViewPage() {
             <p className="text-sm font-semibold text-foreground">Actions</p>
 
             <Button label="Draft WhatsApp Reply" icon={<MessageSquare size={15} />} iconPlacement="left" variant="primary" className="w-full px-4 py-2.5 text-sm" onClick={() => setWhatsappOpen(true)} disabled={(rawLead?.whatsappDraftCount ?? 0) >= 2} />
-            <Button label="Prepare Proposal" icon={<FileText size={15} />} iconPlacement="left" variant="blue" className="w-full px-4 py-2.5 text-sm" onClick={() => setProposalOpen(true)} />
+            <Button
+              label={rawLead.proposalDoc?.generatedAt ? "Proposal Generated" : "Prepare Proposal"}
+              icon={<FileText size={15} />}
+              iconPlacement="left"
+              variant="blue"
+              className="w-full px-4 py-2.5 text-sm"
+              onClick={() => setProposalOpen(true)}
+              disabled={!!rawLead.proposalDoc?.generatedAt}
+            />
 
             <div className="grid grid-cols-2 gap-2">
               <Button label="Sync to Zoho" icon={<RefreshCw size={13} />} iconPlacement="left" variant="secondary" className="w-full px-3 py-2 text-sm" />
-              <Button label="Export PDF" icon={<Download size={13} />} iconPlacement="left" variant="secondary" className="w-full px-3 py-2 text-sm" />
+              <Button
+                label="Download DOCX"
+                icon={<Download size={13} />}
+                iconPlacement="left"
+                variant="secondary"
+                className="w-full px-3 py-2 text-sm"
+                onClick={handleDownloadProposal}
+                disabled={!rawLead.proposalDoc?.generatedAt}
+              />
             </div>
 
             <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 text-xs text-ternary leading-relaxed">

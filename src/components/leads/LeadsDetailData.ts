@@ -31,6 +31,13 @@ export interface ZohoSync {
   lastSynced: string;
 }
 
+export interface ProposalDoc {
+  url?: string | null;
+  filePath?: string | null;
+  fileName?: string | null;
+  generatedAt?: string | null;
+}
+
 export interface LeadDetail {
   id: string;
   leadId: string;
@@ -42,6 +49,7 @@ export interface LeadDetail {
   status: string;
   budget: string;
   timeline: string;
+  aiBudgetRange?: string | null;
   leadSummary: string;
   aiQualification: AIQualification;
   techStack: TechStack;
@@ -52,4 +60,5 @@ export interface LeadDetail {
   originalLeadDetails?: string;
   whatsappDraft: string | null;
   whatsappDraftCount: number;
+  proposalDoc?: ProposalDoc | null;
 }

@@ -208,25 +208,8 @@ export default function LoginPage() {
             iconPlacement="right"
             className="bg-brand-gradient w-full py-3 sm:py-3.5 text-base sm:text-lg mt-2"
           />
-        </form>
-
-        <div className="mt-2 sm:mt-4 flex items-center gap-4 text-ternary font-bold">
-          <div className="h-px bg-gray-200 flex-1" />
-          <span className="text-sm sm:text-sm tracking-wider whitespace-nowrap">Or continue with</span>
-          <div className="h-px bg-gray-200 flex-1" />
-        </div>
-
-        <button className="w-full mt-2 sm:mt-4 bg-white border border-gray-200 text-gray-700 py-2.5 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-3 hover:bg-gray-50 transition-all shadow-sm active:scale-[0.99] disabled:cursor-not-allowed cursor-pointer">
-          <Image 
-            src="/assets/icons/google.svg" 
-            alt="Google" 
-            width={20} 
-            height={20} 
-          />
-          Continue with Google
-        </button>
-        
-        <div className="mt-8 sm:mt-12 flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm font-medium text-gray-500">
+        </form>        
+        <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 text-[10px] sm:text-xs md:text-sm font-medium text-gray-500">
            <div className="w-4 h-4 sm:w-5 sm:h-5 bg-amber-50 rounded-full flex items-center justify-center shrink-0">
              <Image 
                 src="/assets/icons/lock.svg" 

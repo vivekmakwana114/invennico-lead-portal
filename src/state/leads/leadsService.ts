@@ -102,6 +102,14 @@ class LeadsService {
   generateWhatsapp(payload: GenerateWhatsappPayload) {
     return api.post("/v1/leads/whatsapp", payload);
   }
+
+  generateProposal(leadId: string, payload: { preparedFor?: string; preparedBy?: string; scopeDoc?: string }) {
+    return api.post(`/v1/leads/${leadId}/generate/proposal`, payload);
+  }
+
+  downloadProposal(leadId: string) {
+    return api.get(`/v1/leads/${leadId}/proposal/download`, { responseType: "blob" });
+  }
 }
 
 export const leadsService = new LeadsService();

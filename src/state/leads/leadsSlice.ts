@@ -70,9 +70,11 @@ export function mapToLeadDetail(lead: any) {
             lastSynced: lead.zoho.lastSynced ? formatDate(lead.zoho.lastSynced) : "N/A",
           }
         : undefined,
+    aiBudgetRange: lead.estimation?.aiBudgetRange || null,
     originalLeadDetails: lead.details,
     whatsappDraft: lead.whatsappDraft || null,
     whatsappDraftCount: lead.whatsappDraftCount ?? 0,
+    proposalDoc: lead.proposalDoc || null,
   };
 }
 
@@ -194,6 +196,20 @@ export const deleteLead = createAsyncThunk(
   }
 );
 
+export const generateProposal = createAsyncThunk(
+  "leads/generateProposal",
+  async ({ leadId, payload }: { leadId: string; payload: { preparedFor?: string; preparedBy?: string; scopeDoc?: string } }, thunkAPI) => {
+    try {
+      const res = await leadsService.generateProposal(leadId, payload);
+      return res.data?.data?.lead || null;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to generate proposal"
+      );
+    }
+  }
+);
+
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 const leadsSlice = createSlice({
@@ -277,6 +293,25 @@ const leadsSlice = createSlice({
         state.leadsList = state.leadsList.filter((l) => l.id !== action.payload);
       })
       .addCase(deleteLead.rejected, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
+      })
+
+      // generateProposal
+      .addCase(generateProposal.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(generateProposal.fulfilled, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        if (action.payload) {
+          state.currentLead = action.payload;
+          state.leadsList = state.leadsList.map((l) =>
+            l.id === action.payload.id ? action.payload : l
+          );
+        }
+      })
+      .addCase(generateProposal.rejected, (state, action: PayloadAction<any>) => {
         state.actionLoading = false;
         state.actionError = action.payload;
       });

@@ -40,13 +40,22 @@ export function Header({ onMenuClick }: HeaderProps) {
     return PAGE_TITLES[last] ?? last.charAt(0).toUpperCase() + last.slice(1);
   };
 
+  const [avatarError, setAvatarError] = useState(false);
+
   const displayName = user?.name ?? "";
   const displayEmail = user?.email ?? "";
   const initials = getInitials(displayName);
-  const avatarSrc =
-    profileAvatar || user?.avatar
-      ? `${BASE_URL}${profileAvatar || user?.avatar}`
-      : null;
+
+  const rawAvatar = profileAvatar || user?.avatar;
+  const avatarSrc = rawAvatar
+    ? rawAvatar.startsWith("http://") || rawAvatar.startsWith("https://")
+      ? rawAvatar
+      : `${BASE_URL}${rawAvatar}`
+    : null;
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarSrc]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -109,12 +118,13 @@ export function Header({ onMenuClick }: HeaderProps) {
             onClick={() => setMenuOpen((v) => !v)}
             className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all overflow-hidden"
           >
-       {avatarSrc ? (
+            {avatarSrc && !avatarError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatarSrc}
                 alt="Avatar"
                 className="w-full h-full object-cover"
+                onError={() => setAvatarError(true)}
               />
             ) : (
               initials
