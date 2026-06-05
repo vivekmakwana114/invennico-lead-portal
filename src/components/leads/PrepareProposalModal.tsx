@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, FileText, FolderOpen, CheckCircle2, Database } from "lucide-react";
+import { X, FileText, CheckCircle2, Download, Database, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import { generateProposal } from "@/state/leads/leadsSlice";
+import { leadsService } from "@/state/leads/leadsService";
 import type { LeadDetail } from "@/components/leads/LeadsDetailData";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -15,14 +18,6 @@ function buildTechStack(lead: LeadDetail): string {
   ].join(", ");
 }
 
-function buildDrivePath(lead: LeadDetail): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.toLocaleString("default", { month: "short" });
-  const safe = lead.fullProjectName.replace(/[/\\:*?"<>|]/g, "-");
-  return `/Proposals/${year}/${month}/${safe} - Proposal v1.0.pdf`;
-}
-
 // ── Input shared style ────────────────────────────────────────────────────────
 
 const inputCls =
@@ -30,7 +25,7 @@ const inputCls =
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Phase = "form" | "generating" | "success";
+type Phase = "form" | "generating" | "success" | "error";
 
 interface PrepareProposalModalProps {
   isOpen: boolean;
@@ -41,15 +36,18 @@ interface PrepareProposalModalProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalModalProps) {
+  const dispatch = useAppDispatch();
+  const authUser = useAppSelector((s: any) => s.auth.user);
+
   const [proposalName, setProposalName] = useState(lead.fullProjectName);
-  const [clientName, setClientName] = useState(lead.clientContact);
-  const [budget, setBudget] = useState(lead.budget);
-  const [timeline, setTimeline] = useState(lead.timeline);
+  const [clientName, setClientName] = useState(lead.clientContact === "N/A" ? "" : lead.clientContact);
+  const [budget, setBudget] = useState(lead.budget === "N/A" ? "" : lead.budget);
+  const [timeline, setTimeline] = useState(lead.timeline === "N/A" ? "" : lead.timeline);
   const [techStack, setTechStack] = useState(() => buildTechStack(lead));
   const [phase, setPhase] = useState<Phase>("form");
   const [barProgress, setBarProgress] = useState(0);
-
-  const drivePath = buildDrivePath(lead);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   // Body scroll lock
   useEffect(() => {
@@ -57,21 +55,13 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Animated progress bar during generation
-  useEffect(() => {
-    if (phase !== "generating") return;
-    const t1 = setTimeout(() => setBarProgress(85), 50);
-    const t2 = setTimeout(() => setBarProgress(100), 1600);
-    const t3 = setTimeout(() => setPhase("success"), 1900);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [phase]);
-
   // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
       const t = setTimeout(() => {
         setPhase("form");
         setBarProgress(0);
+        setErrorMsg("");
       }, 300);
       return () => clearTimeout(t);
     }
@@ -79,9 +69,53 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
 
   if (!isOpen) return null;
 
-  function handleGenerate() {
+  async function handleGenerate() {
     setBarProgress(0);
     setPhase("generating");
+
+    const t1 = setTimeout(() => setBarProgress(40), 100);
+    const t2 = setTimeout(() => setBarProgress(75), 3000);
+
+    try {
+      await dispatch(
+        generateProposal({
+          leadId: lead.id,
+          payload: {
+            preparedFor: clientName.trim() || undefined,
+            preparedBy: authUser?.name || undefined,
+          },
+        })
+      ).unwrap();
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      setBarProgress(100);
+      setTimeout(() => setPhase("success"), 400);
+    } catch (err: any) {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      setErrorMsg(typeof err === "string" ? err : err?.message || "Something went wrong. Please try again.");
+      setPhase("error");
+    }
+  }
+
+  async function handleDownload() {
+    setDownloadLoading(true);
+    try {
+      const res = await leadsService.downloadProposal(lead.id);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Proposal-${lead.fullProjectName}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      // user can retry from lead detail page
+    } finally {
+      setDownloadLoading(false);
+    }
   }
 
   // ── Generating overlay ────────────────────────────────────────────────────
@@ -95,7 +129,7 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">Generating Proposal...</h2>
           <p className="text-sm text-ternary mb-7">
-            AI is creating your comprehensive scope document
+            AI is creating your comprehensive scope document. This may take 30–60 seconds.
           </p>
           <div className="w-full h-2.5 rounded-full bg-border overflow-hidden mb-3">
             <div
@@ -106,7 +140,27 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
               }}
             />
           </div>
-          <p className="text-sm text-ternary">This will take a few moments...</p>
+          <p className="text-sm text-ternary">Please wait — do not close this window.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error overlay ─────────────────────────────────────────────────────────
+
+  if (phase === "error") {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-xl rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-error-bg flex items-center justify-center mb-5">
+            <AlertCircle size={32} className="text-error-text" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Generation Failed</h2>
+          <p className="text-sm text-ternary mb-6">{errorMsg}</p>
+          <div className="flex gap-3 w-full">
+            <Button label="Cancel" variant="secondary" className="flex-1 py-3 text-sm rounded-full" onClick={onClose} />
+            <Button label="Try Again" variant="primary" className="flex-1 py-3 text-sm rounded-full" onClick={() => setPhase("form")} />
+          </div>
         </div>
       </div>
     );
@@ -133,21 +187,32 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
               <span className="text-sm text-foreground">Proposal Generated Successfully</span>
             </div>
             <div className="flex items-center gap-3 px-4 py-3.5">
-              <FolderOpen size={18} className="text-blue shrink-0" />
-              <span className="text-sm text-foreground">Saved to Google Drive</span>
+              <CheckCircle2 size={18} className="text-success-text shrink-0" />
+              <span className="text-sm text-foreground">Saved to Server</span>
             </div>
             <div className="flex items-center gap-3 px-4 py-3.5">
               <Database size={18} className="text-purple shrink-0" />
-              <span className="text-sm text-foreground">Attached to Zoho Lead</span>
+              <span className="text-sm text-foreground">Attached to Lead Record</span>
             </div>
           </div>
 
-          <Button
-            label="Done"
-            variant="primary"
-            className="w-full py-3 text-sm rounded-full"
-            onClick={onClose}
-          />
+          <div className="flex gap-3 w-full">
+            <Button
+              label="Done"
+              variant="secondary"
+              className="flex-1 py-3 text-sm rounded-full"
+              onClick={onClose}
+            />
+            <Button
+              label={downloadLoading ? "Downloading..." : "Download DOCX"}
+              icon={<Download size={15} />}
+              iconPlacement="left"
+              variant="primary"
+              className="flex-1 py-3 text-sm rounded-full"
+              onClick={handleDownload}
+              disabled={downloadLoading}
+            />
+          </div>
         </div>
       </div>
     );
@@ -241,36 +306,27 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
           </div>
 
           {/* Milestones */}
-          <div>
-            <p className="text-sm font-semibold text-foreground mb-3">Milestones</p>
-            <div className="space-y-2">
-              {lead.milestones.map((m, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-off-white border border-border"
-                >
-                  <span className="w-7 h-7 rounded-full bg-error-bg border border-error-border text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <span className="text-sm text-foreground">
-                    {m.name}{" "}
-                    <span className="text-ternary">({m.duration})</span>
-                  </span>
-                </div>
-              ))}
+          {lead.milestones.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-3">Milestones</p>
+              <div className="space-y-2">
+                {lead.milestones.map((m, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-off-white border border-border"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-error-bg border border-error-border text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-foreground">
+                      {m.name}{" "}
+                      <span className="text-ternary">({m.duration})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Google Drive Folder */}
-          <div className="rounded-xl border border-border p-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <FolderOpen size={16} className="text-ternary shrink-0" />
-              Google Drive Folder
-            </div>
-            <p className="font-mono text-xs text-ternary break-all leading-relaxed">
-              {drivePath}
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Footer */}

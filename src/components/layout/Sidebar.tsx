@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -39,10 +39,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const visibleNavItems = navItems.filter(
     (item) => !item.adminOnly || role === "admin",
   );
-  const avatarSrc =
-    profileAvatar || user?.avatar
-      ? `${BASE_URL}${profileAvatar || user?.avatar}`
-      : null;
+  const [avatarError, setAvatarError] = useState(false);
+
+  const rawAvatar = profileAvatar || user?.avatar;
+  const avatarSrc = rawAvatar
+    ? rawAvatar.startsWith("http://") || rawAvatar.startsWith("https://")
+      ? rawAvatar
+      : `${BASE_URL}${rawAvatar}`
+    : null;
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarSrc]);
 
   return (
     <>
@@ -146,12 +154,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </p>
           <div className="flex items-center gap-3 p-1 rounded-xl hover:bg-off-white transition-colors">
             <div className="w-10 h-10 rounded-full bg-primary border-2 border-white shadow-sm flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
-              {avatarSrc ? (
+              {avatarSrc && !avatarError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={avatarSrc}
                   alt="Avatar"
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
                 />
               ) : (
                 getInitials(user?.name || "")

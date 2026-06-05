@@ -134,10 +134,19 @@ export default function ProfilePage() {
     }
   }
 
-  const savedAvatarUrl = profile?.avatar
-    ? `${BASE_URL}${profile.avatar}`
+  const [avatarError, setAvatarError] = useState(false);
+
+  const rawAvatar = profile?.avatar;
+  const savedAvatarUrl = rawAvatar
+    ? rawAvatar.startsWith("http://") || rawAvatar.startsWith("https://")
+      ? rawAvatar
+      : `${BASE_URL}${rawAvatar}`
     : null;
   const displayAvatar = pendingPreview || savedAvatarUrl;
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [savedAvatarUrl]);
 
   const joinedDate = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("en-US", {
@@ -174,12 +183,13 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-              {displayAvatar ? (
+              {displayAvatar && !avatarError ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={displayAvatar}
                   alt="Avatar"
                   className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
                 />
               ) : (
                 getInitials(form.name || "U")

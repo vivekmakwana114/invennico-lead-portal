@@ -2,24 +2,24 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Eye, SquarePen, Download, Clock, CircleCheck, FileText, Sparkles } from "lucide-react";
+import { Eye, Clock, CircleCheck, FileText } from "lucide-react";
 import { type Column } from "@/components/ui/GridComponent";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type LeadTag = "crm-synced" | "crm-pending" | "proposal-synced" | "poc";
+export type LeadTag = "crm-synced" | "crm-pending" | "proposal-synced";
 export type LeadStatus =
+  | "new"
   | "qualified"
-  | "under-review"
+  | "engagement-started"
   | "proposal-sent"
   | "won"
-  | "new"
-  | "rejected"
-  | "lost";
+  | "drop";
 
 export interface Lead extends Record<string, unknown> {
-  id: string;
+  id: string;       // MongoDB ObjectId — used for navigation
+  leadId: string;   // Display ID e.g. "LD-42"
   projectName: string;
   tags: LeadTag[];
   source: string;
@@ -27,7 +27,6 @@ export interface Lead extends Record<string, unknown> {
   status: LeadStatus;
   budget: string;
   timeline: string;
-  proposal: string;
 }
 
 // ── Cell Renderers ────────────────────────────────────────────────────────────
@@ -35,10 +34,9 @@ export interface Lead extends Record<string, unknown> {
 
 function TagList({ tags }: { tags: LeadTag[] }) {
   const map: Record<LeadTag, { label: string; icon: React.ReactNode; className: string }> = {
-    "crm-synced": { label: "CRM Synced", icon: <CircleCheck size={12} />, className: "bg-success-bg text-success-text" },
-    "crm-pending": { label: "CRM Pending", icon: <Clock size={12} />, className: "bg-yellow-50 text-yellow-600" },
-    "proposal-synced": { label: "Proposal Synced", icon: <FileText size={12} />, className: "bg-blue-50 text-blue-600" },
-    "poc": { label: "AI Analyzed", icon: <Sparkles size={12} />, className: "bg-primary/10 text-primary" },
+    "crm-synced":      { label: "CRM Synced",      icon: <CircleCheck size={12} />, className: "bg-success-bg text-success-text" },
+    "crm-pending":     { label: "CRM Pending",     icon: <Clock size={12} />,       className: "bg-yellow-50 text-yellow-600" },
+    "proposal-synced": { label: "Proposal Synced", icon: <FileText size={12} />,    className: "bg-blue-50 text-blue-600" },
   };
   return (
     <div className="flex flex-wrap gap-1 mt-1">
@@ -80,7 +78,7 @@ function ActionButtons({ id }: { id: string }) {
 
 export const LEADS_COLUMNS: Column<Lead>[] = [
   {
-    key: "id",
+    key: "leadId",
     header: "Lead ID",
     className: "text-sm font-medium text-ternary whitespace-nowrap",
   },
@@ -117,11 +115,6 @@ export const LEADS_COLUMNS: Column<Lead>[] = [
   {
     key: "timeline",
     header: "Timeline",
-    className: "text-sm text-ternary whitespace-nowrap",
-  },
-  {
-    key: "proposal",
-    header: "Proposal",
     className: "text-sm text-ternary whitespace-nowrap",
   },
   {

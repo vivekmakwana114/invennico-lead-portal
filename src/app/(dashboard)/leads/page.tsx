@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Users, CheckCircle, FileText, Trophy, Search, SlidersHorizontal, Plus } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -9,19 +9,19 @@ import { GridComponent } from "@/components/ui/GridComponent";
 import { Pagination } from "@/components/ui/Pagination";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { LEADS_COLUMNS, type LeadStatus } from "@/components/leads/LeadsColumns";
-import { ALL_LEADS, ITEMS_PER_PAGE } from "@/components/leads/LeadsData";
+import { useAppDispatch, useAppSelector } from "@/state/hooks";
+import { fetchLeads, fetchLeadsStats, mapToGridRow } from "@/state/leads/leadsSlice";
 
-// ── Filter Options ────────────────────────────────────────────────────────────
+const ITEMS_PER_PAGE = 10;
 
 const STATUS_OPTIONS = [
   { label: "All", value: "all" },
+  { label: "New", value: "new" },
   { label: "Qualified", value: "qualified" },
-  { label: "Under Review", value: "under-review" },
+  { label: "Engagement Started", value: "engagement-started" },
   { label: "Proposal Sent", value: "proposal-sent" },
   { label: "Won", value: "won" },
-  { label: "New", value: "new" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Lost", value: "lost" },
+  { label: "Dropped", value: "drop" },
 ];
 
 const SOURCE_OPTIONS = ["All", "Alliance", "Direct", "Referral", "Upwork", "Freelancer"].map(
@@ -36,20 +36,39 @@ const DATE_RANGE_OPTIONS = [
   { label: "All time", value: "0" },
 ];
 
-// ── Page ─────────────────────────────────────────────────────────────────────
-
 export default function LeadsPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { leadsList, totalResults, isLoading, stats } = useAppSelector((s) => s.leads);
+
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("All");
+  const [dateRange, setDateRange] = useState("0");
   const filterPanelRef = useRef<HTMLDivElement>(null);
-  
-  const [leadsList, setLeadsList] = useState(ALL_LEADS);
+
+  const load = useCallback(() => {
+    const params: Record<string, any> = { page: currentPage, limit: ITEMS_PER_PAGE };
+    if (statusFilter !== "all") params.status = statusFilter;
+    if (sourceFilter !== "All") params.source = sourceFilter.toLowerCase();
+    if (dateRange !== "0") params.dateRange = Number(dateRange);
+    dispatch(fetchLeads(params));
+  }, [dispatch, currentPage, statusFilter, sourceFilter, dateRange]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => { dispatch(fetchLeadsStats()); }, [dispatch]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) {
+      const dropdownMenu = document.getElementById("dropdown-portal-menu");
+      if (
+        filterPanelRef.current &&
+        !filterPanelRef.current.contains(e.target as Node) &&
+        (!dropdownMenu || !dropdownMenu.contains(e.target as Node))
+      ) {
         setShowFilters(false);
       }
     }
@@ -57,63 +76,8 @@ export default function LeadsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    async function loadSessionLeads() {
-      const pocLeads: any[] = [];
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key?.startsWith("lead_LD-POC-") || key?.startsWith("lead_POC-")) {
-          try {
-            const pocData = JSON.parse(sessionStorage.getItem(key)!);
-            pocLeads.push({
-              id: pocData.id,
-              projectName: pocData.fullProjectName || "Untitled Project",
-              tags: ["poc"],
-              source: pocData.source || "Direct",
-              dateReceived: pocData.dateReceived || new Date().toISOString().split("T")[0],
-              status: pocData.status || "new",
-              budget: pocData.budget || "N/A",
-              timeline: pocData.timeline || "N/A",
-              proposal: "Not Started",
-            });
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      }
-      if (pocLeads.length > 0) {
-        setLeadsList([...pocLeads, ...ALL_LEADS]);
-      }
-    }
-    loadSessionLeads();
-  }, []);
-  
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("All");
-  const [dateRange, setDateRange] = useState("0");
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    const days = parseInt(dateRange, 10);
-    const cutoff = days > 0 ? new Date(Date.now() - days * 86_400_000) : null;
-
-    return leadsList.filter((l) => {
-      if (q && !l.id.toLowerCase().includes(q) && !l.projectName.toLowerCase().includes(q) && !l.source.toLowerCase().includes(q)) return false;
-      if (statusFilter !== "all" && l.status !== (statusFilter as LeadStatus)) return false;
-      if (sourceFilter !== "All" && l.source !== sourceFilter) return false;
-      if (cutoff && new Date(l.dateReceived) < cutoff) return false;
-      return true;
-    });
-  }, [search, statusFilter, sourceFilter, dateRange, leadsList]);
-
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, currentPage]);
-
   function handleSearch(value: string) {
     setSearch(value);
-    setCurrentPage(1);
   }
 
   function handleFilter(setter: (v: string) => void) {
@@ -128,11 +92,18 @@ export default function LeadsPage() {
   }
 
   const hasActiveFilters = statusFilter !== "all" || sourceFilter !== "All" || dateRange !== "0";
+  const gridRows = useMemo(() => {
+    const rows = leadsList.map(mapToGridRow);
+    if (!search.trim()) return rows;
+    const q = search.toLowerCase();
+    return rows.filter(
+      (r) =>
+        (r.leadId as string).toLowerCase().includes(q) ||
+        (r.projectName as string).toLowerCase().includes(q) ||
+        (r.source as string).toLowerCase().includes(q)
+    );
+  }, [leadsList, search]);
 
-  const totalLeads = leadsList.length;
-  const qualifiedCount = leadsList.filter((l) => l.status === "qualified").length;
-  const proposalCount = leadsList.filter((l) => l.status === "proposal-sent").length;
-  const wonCount = leadsList.filter((l) => l.status === "won").length;
 
   return (
     <div className="space-y-6">
@@ -154,13 +125,12 @@ export default function LeadsPage() {
 
       {/* Search & Filter Panel */}
       <div ref={filterPanelRef} className="bg-white border border-border rounded-2xl shadow-sm">
-        {/* Search row */}
         <div className="flex items-center gap-3 p-3">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ternary pointer-events-none" />
             <input
               type="text"
-              placeholder="Search by project name, lead ID, or source..."
+              placeholder="Search by project name or lead ID..."
               value={search}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-off-white text-sm text-foreground placeholder:text-ternary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
@@ -176,41 +146,25 @@ export default function LeadsPage() {
           />
         </div>
 
-        {/* Filter dropdowns */}
         {showFilters && (
           <div className="border-t border-border px-4 py-5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-foreground">Status</label>
-                <Dropdown
-                  options={STATUS_OPTIONS}
-                  value={statusFilter}
-                  onChange={handleFilter(setStatusFilter)}
-                />
+                <Dropdown options={STATUS_OPTIONS} value={statusFilter} onChange={handleFilter(setStatusFilter)} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-foreground">Source</label>
-                <Dropdown
-                  options={SOURCE_OPTIONS}
-                  value={sourceFilter}
-                  onChange={handleFilter(setSourceFilter)}
-                />
+                <Dropdown options={SOURCE_OPTIONS} value={sourceFilter} onChange={handleFilter(setSourceFilter)} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-foreground">Date Range</label>
-                <Dropdown
-                  options={DATE_RANGE_OPTIONS}
-                  value={dateRange}
-                  onChange={handleFilter(setDateRange)}
-                />
+                <Dropdown options={DATE_RANGE_OPTIONS} value={dateRange} onChange={handleFilter(setDateRange)} />
               </div>
             </div>
             {hasActiveFilters && (
               <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => resetFilters()}
-                  className="text-sm text-primary font-medium hover:underline cursor-pointer"
-                >
+                <button onClick={resetFilters} className="text-sm text-primary font-medium hover:underline cursor-pointer">
                   Reset filters
                 </button>
               </div>
@@ -223,22 +177,22 @@ export default function LeadsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Leads"
-          value={totalLeads}
+          value={stats.total}
           icon={<div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue"><Users size={18} /></div>}
         />
         <StatCard
           label="Qualified (Pre-Sales)"
-          value={qualifiedCount}
+          value={stats.qualified}
           icon={<div className="w-9 h-9 rounded-xl bg-success-bg flex items-center justify-center text-success-text"><CheckCircle size={18} /></div>}
         />
         <StatCard
           label="Proposals Sent"
-          value={proposalCount}
+          value={stats.proposalSent}
           icon={<div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple"><FileText size={18} /></div>}
         />
         <StatCard
           label="Won (From Zoho)"
-          value={wonCount}
+          value={stats.won}
           icon={<div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600"><Trophy size={18} /></div>}
         />
       </div>
@@ -246,15 +200,15 @@ export default function LeadsPage() {
       {/* Data Grid */}
       <GridComponent
         columns={LEADS_COLUMNS}
-        data={paginated}
+        data={gridRows}
         rowKey={(row) => row.id as string}
-        emptyMessage="No leads match your search."
+        emptyMessage={isLoading ? "Loading leads..." : "No leads match your search."}
       />
 
       {/* Pagination */}
       <Pagination
         currentPage={currentPage}
-        totalItems={filtered.length}
+        totalItems={totalResults}
         itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={setCurrentPage}
         itemLabel="leads"
