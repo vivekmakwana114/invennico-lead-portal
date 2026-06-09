@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { X, FileText, CheckCircle2, Download, Database, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";

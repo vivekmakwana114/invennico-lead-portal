@@ -49,6 +49,14 @@ class SettingsService {
   updateSettings(payload: UpdateSettingsPayload) {
     return api.put("/v1/settings", payload);
   }
+
+  getPrompt() {
+    return api.get("/v1/settings/prompt");
+  }
+
+  updatePrompt(aiPrompt: string) {
+    return api.put("/v1/settings/prompt", { aiPrompt });
+  }
 }
 
 export const settingsService = new SettingsService();

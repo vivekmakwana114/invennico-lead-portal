@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from "react";
 import { GripVertical, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
@@ -92,6 +92,7 @@ export function ScopeTab() {
   // Populate sections whenever settings load
   useEffect(() => {
     if (settings?.proposalSections) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSections(buildSectionsFromBackend(settings.proposalSections));
     }
   }, [settings]);

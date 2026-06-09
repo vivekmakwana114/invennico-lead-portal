@@ -18,6 +18,7 @@ export default function DashboardLayout({
 
   // Set isMounted to true on client-side load
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 

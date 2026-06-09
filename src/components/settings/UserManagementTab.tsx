@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Trash2, Plus, Check, X, Pencil } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";

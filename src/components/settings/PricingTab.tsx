@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
@@ -107,6 +107,7 @@ export function PricingTab() {
     const pc = settings.pricingConfig;
 
     if (pc.engineerRates) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRates((prev) =>
         prev.map((r) => ({
           ...r,

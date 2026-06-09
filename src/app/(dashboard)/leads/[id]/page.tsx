@@ -17,6 +17,53 @@ import { useAppDispatch, useAppSelector } from "@/state/hooks";
 import { fetchLead, updateLead, mapToLeadDetail, clearCurrentLead } from "@/state/leads/leadsSlice";
 import { leadsService } from "@/state/leads/leadsService";
 
+/**
+ * Splits text that contains inline numbered items like "(1) ..., (2) ..."
+ * or "1. ... 2. ..." into a structured { intro, items } object so we can
+ * render them as a proper ordered list instead of one run-on paragraph.
+ */
+function parseNumberedContent(text: string): { intro: string; items: string[] } | null {
+  if (!text) return null;
+
+  // Match patterns: "(1)", "(2)" or "1." "2." at word boundaries
+  const pattern = /\s*[\[(]?(\d+)[)\].]\s+/g;
+  const matches = [...text.matchAll(pattern)];
+  if (matches.length < 2) return null;
+
+  const firstMatch = matches[0];
+  const intro = text.slice(0, firstMatch.index).trim();
+  const items: string[] = [];
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = (matches[i].index ?? 0) + matches[i][0].length;
+    const end   = matches[i + 1]?.index ?? text.length;
+    const item  = text.slice(start, end).trim().replace(/,\s*$/, "");
+    if (item) items.push(item);
+  }
+
+  return items.length >= 2 ? { intro, items } : null;
+}
+
+function NumberedContent({ text, className = "" }: { text: string; className?: string }) {
+  const parsed = parseNumberedContent(text);
+  if (!parsed) return <p className={`text-sm text-ternary leading-relaxed ${className}`}>{text}</p>;
+  return (
+    <div className={className}>
+      {parsed.intro && <p className="text-sm text-ternary leading-relaxed mb-2">{parsed.intro}</p>}
+      <ol className="space-y-1.5 list-none">
+        {parsed.items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-ternary">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-off-white border border-border text-xs font-semibold text-ternary flex items-center justify-center mt-0.5">
+              {i + 1}
+            </span>
+            <span className="leading-relaxed">{item}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function scoreLabelColor(score: number) {
   if (score >= 80) return "text-success-text";
   if (score >= 60) return "text-yellow";
@@ -136,10 +183,10 @@ export default function LeadViewPage() {
               </div>
             </div>
             <p className={`text-sm font-semibold mb-2 ${scoreLabelColor(ai.score)}`}>{ai.label}</p>
-            <p className="text-sm text-ternary leading-relaxed mb-4">{ai.description}</p>
+            <NumberedContent text={ai.description} className="mb-4" />
             <div className="border-l-4 border-primary bg-orange-50 rounded-r-xl px-4 py-3 mb-3">
               <p className="text-xs font-semibold text-primary mb-1">Recommended Next Action (Pre-Sales)</p>
-              <p className="text-sm text-ternary leading-relaxed">{ai.nextAction}</p>
+              <NumberedContent text={ai.nextAction} />
             </div>
             <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
               <Info size={14} className="text-blue mt-0.5 shrink-0" />
@@ -328,8 +375,8 @@ function TechCategory({ icon, label, items, dotColor }: { icon: React.ReactNode;
       <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">{icon}{label}</p>
       <ul className="space-y-1">
         {items.map((item) => (
-          <li key={item} className="flex items-center gap-2 text-sm text-ternary">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+          <li key={item} className="flex items-start gap-2 text-sm text-ternary">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${dotColor}`} />
             {item}
           </li>
         ))}

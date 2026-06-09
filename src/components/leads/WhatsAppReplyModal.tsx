@@ -38,6 +38,7 @@ export function WhatsAppReplyModal({ isOpen, onClose, lead }: WhatsAppReplyModal
     if (!isOpen) return;
 
     // Reset on every open
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFollowUp("");
     setMode1Error("");
     setMode2Error("");
