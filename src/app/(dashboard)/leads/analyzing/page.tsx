@@ -1,5 +1,5 @@
 "use client";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Check, Loader2 } from "lucide-react";
@@ -57,7 +57,7 @@ export default function AnalyzingPage() {
         await new Promise((r) => setTimeout(r, 400));
         setProgress(4);
 
-        setTimeout(() => router.push(`/leads/${savedLead.id}`), 500);
+        setTimeout(() => router.push(`/leads/${savedLead.leadId}`), 500);
 
       } catch (err: any) {
         timers.forEach(clearTimeout);

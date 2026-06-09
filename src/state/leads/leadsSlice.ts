@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { leadsService, GetLeadsParams } from "./leadsService";
 
@@ -32,6 +33,7 @@ export function mapToLeadDetail(lead: any) {
     source: capitalize(lead.source),
     dateReceived: formatDate(lead.createdAt),
     status: lead.status,
+    isAnalyzed: lead.isAnalyzed ?? false,
     budget: lead.budget || "N/A",
     timeline: lead.timeline || "N/A",
     leadSummary: lead.analysis?.summary || "N/A",

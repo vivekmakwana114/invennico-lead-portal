@@ -37,7 +37,7 @@ export function UpcomingFollowUps() {
   return (
     <div className="bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col h-full">
       <h3 className="font-bold text-base mb-6">Upcoming Follow-ups</h3>
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-y-auto max-h-[400px] pr-1">
         {followups.map((item) => (
           <div key={item.id} className="relative p-4 rounded-xl bg-[#FEF2F2]/50 border border-transparent hover:border-red-100 transition-all cursor-pointer group flex flex-col pl-6">
             {/* Left Accent Bar */}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { settingsService, UpdateSettingsPayload } from "./settingsService";
 
@@ -8,6 +9,12 @@ interface SettingsState {
   error: string | null;
   saveError: string | null;
   saveSuccess: boolean;
+  // AI Prompt
+  aiPrompt: string;
+  promptLoading: boolean;
+  promptSaving: boolean;
+  promptSaveSuccess: boolean;
+  promptSaveError: string | null;
 }
 
 const initialState: SettingsState = {
@@ -17,6 +24,12 @@ const initialState: SettingsState = {
   error: null,
   saveError: null,
   saveSuccess: false,
+  // AI Prompt
+  aiPrompt: "",
+  promptLoading: false,
+  promptSaving: false,
+  promptSaveSuccess: false,
+  promptSaveError: null,
 };
 
 export const fetchSettings = createAsyncThunk(
@@ -47,6 +60,34 @@ export const updateSettings = createAsyncThunk(
   }
 );
 
+export const fetchPrompt = createAsyncThunk(
+  "settings/fetchPrompt",
+  async (_, thunkAPI) => {
+    try {
+      const res = await settingsService.getPrompt();
+      return (res.data?.data?.aiPrompt as string) ?? "";
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to fetch prompt"
+      );
+    }
+  }
+);
+
+export const savePrompt = createAsyncThunk(
+  "settings/savePrompt",
+  async (aiPrompt: string, thunkAPI) => {
+    try {
+      const res = await settingsService.updatePrompt(aiPrompt);
+      return (res.data?.data?.aiPrompt as string) ?? "";
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to save prompt"
+      );
+    }
+  }
+);
+
 const settingsSlice = createSlice({
   name: "settings",
   initialState,
@@ -54,6 +95,10 @@ const settingsSlice = createSlice({
     clearSaveStatus: (state) => {
       state.saveError = null;
       state.saveSuccess = false;
+    },
+    clearPromptStatus: (state) => {
+      state.promptSaveSuccess = false;
+      state.promptSaveError = null;
     },
   },
   extraReducers: (builder) => {
@@ -84,9 +129,35 @@ const settingsSlice = createSlice({
       .addCase(updateSettings.rejected, (state, action: PayloadAction<any>) => {
         state.isSaving = false;
         state.saveError = action.payload;
+      })
+
+      .addCase(fetchPrompt.pending, (state) => {
+        state.promptLoading = true;
+      })
+      .addCase(fetchPrompt.fulfilled, (state, action: PayloadAction<string>) => {
+        state.promptLoading = false;
+        state.aiPrompt = action.payload;
+      })
+      .addCase(fetchPrompt.rejected, (state) => {
+        state.promptLoading = false;
+      })
+
+      .addCase(savePrompt.pending, (state) => {
+        state.promptSaving = true;
+        state.promptSaveSuccess = false;
+        state.promptSaveError = null;
+      })
+      .addCase(savePrompt.fulfilled, (state, action: PayloadAction<string>) => {
+        state.promptSaving = false;
+        state.promptSaveSuccess = true;
+        state.aiPrompt = action.payload;
+      })
+      .addCase(savePrompt.rejected, (state, action: PayloadAction<any>) => {
+        state.promptSaving = false;
+        state.promptSaveError = action.payload;
       });
   },
 });
 
-export const { clearSaveStatus } = settingsSlice.actions;
+export const { clearSaveStatus, clearPromptStatus } = settingsSlice.actions;
 export default settingsSlice.reducer;

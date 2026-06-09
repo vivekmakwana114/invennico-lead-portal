@@ -47,6 +47,7 @@ export interface LeadDetail {
   source: string;
   dateReceived: string;
   status: string;
+  isAnalyzed: boolean;
   budget: string;
   timeline: string;
   aiBudgetRange?: string | null;

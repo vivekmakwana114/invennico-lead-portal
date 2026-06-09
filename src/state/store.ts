@@ -3,6 +3,7 @@ import authReducer from "./auth/authSlice";
 import usersReducer from "./users/usersSlice";
 import leadsReducer from "./leads/leadsSlice";
 import settingsReducer from "./settings/settingsSlice";
+import dashboardReducer from "./dashboard/dashboardSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     users: usersReducer,
     leads: leadsReducer,
     settings: settingsReducer,
+    dashboard: dashboardReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

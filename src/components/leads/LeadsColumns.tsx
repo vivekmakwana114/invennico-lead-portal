@@ -18,8 +18,8 @@ export type LeadStatus =
   | "drop";
 
 export interface Lead extends Record<string, unknown> {
-  id: string;       // MongoDB ObjectId — used for navigation
-  leadId: string;   // Display ID e.g. "LD-42"
+  id: string;       // MongoDB ObjectId
+  leadId: string;   // Display ID e.g. "LD-42" — used for navigation
   projectName: string;
   tags: LeadTag[];
   source: string;
@@ -122,6 +122,6 @@ export const LEADS_COLUMNS: Column<Lead>[] = [
     header: "Actions",
     headerClassName: "text-center",
     className: "text-center",
-    render: (_, row) => <ActionButtons id={row.id as string} />,
+    render: (_, row) => <ActionButtons id={row.leadId as string} />,
   },
 ];

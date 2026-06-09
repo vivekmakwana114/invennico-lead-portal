@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useRef, useEffect } from "react";
 import {
   Camera,
@@ -62,6 +61,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         name: profile.name || "",
         email: profile.email || "",
@@ -145,6 +145,7 @@ export default function ProfilePage() {
   const displayAvatar = pendingPreview || savedAvatarUrl;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAvatarError(false);
   }, [savedAvatarUrl]);
 

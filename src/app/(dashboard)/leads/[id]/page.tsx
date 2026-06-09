@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import {
   ArrowLeft, Calendar, MapPin, User, Sparkles, Monitor, Server,
   Plug, Cloud, Clock, MessageCircle, Info, CheckCircle2, RefreshCw,
-  Download, MessageSquare, FileText,
+  Download, MessageSquare, FileText, Pencil, X, Check,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +16,53 @@ import { PrepareProposalModal } from "@/components/leads/PrepareProposalModal";
 import { useAppDispatch, useAppSelector } from "@/state/hooks";
 import { fetchLead, updateLead, mapToLeadDetail, clearCurrentLead } from "@/state/leads/leadsSlice";
 import { leadsService } from "@/state/leads/leadsService";
+
+/**
+ * Splits text that contains inline numbered items like "(1) ..., (2) ..."
+ * or "1. ... 2. ..." into a structured { intro, items } object so we can
+ * render them as a proper ordered list instead of one run-on paragraph.
+ */
+function parseNumberedContent(text: string): { intro: string; items: string[] } | null {
+  if (!text) return null;
+
+  // Match patterns: "(1)", "(2)" or "1." "2." at word boundaries
+  const pattern = /\s*[\[(]?(\d+)[)\].]\s+/g;
+  const matches = [...text.matchAll(pattern)];
+  if (matches.length < 2) return null;
+
+  const firstMatch = matches[0];
+  const intro = text.slice(0, firstMatch.index).trim();
+  const items: string[] = [];
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = (matches[i].index ?? 0) + matches[i][0].length;
+    const end   = matches[i + 1]?.index ?? text.length;
+    const item  = text.slice(start, end).trim().replace(/,\s*$/, "");
+    if (item) items.push(item);
+  }
+
+  return items.length >= 2 ? { intro, items } : null;
+}
+
+function NumberedContent({ text, className = "" }: { text: string; className?: string }) {
+  const parsed = parseNumberedContent(text);
+  if (!parsed) return <p className={`text-sm text-ternary leading-relaxed ${className}`}>{text}</p>;
+  return (
+    <div className={className}>
+      {parsed.intro && <p className="text-sm text-ternary leading-relaxed mb-2">{parsed.intro}</p>}
+      <ol className="space-y-1.5 list-none">
+        {parsed.items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-ternary">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-off-white border border-border text-xs font-semibold text-ternary flex items-center justify-center mt-0.5">
+              {i + 1}
+            </span>
+            <span className="leading-relaxed">{item}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 function scoreLabelColor(score: number) {
   if (score >= 80) return "text-success-text";
@@ -41,6 +88,13 @@ export default function LeadViewPage() {
   const { currentLead: rawLead, isLoading, actionLoading } = useAppSelector((s) => s.leads);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
+
+  // Inline estimation edit state
+  const [editingEstimation, setEditingEstimation] = useState(false);
+  const [editTimeline, setEditTimeline] = useState("");
+  const [editBudget, setEditBudget] = useState("");
+  const [editMilestones, setEditMilestones] = useState<{ name: string; duration: string; cost: string }[]>([]);
+  const [estimationSaving, setEstimationSaving] = useState(false);
 
   useEffect(() => {
     if (id) dispatch(fetchLead(id));
@@ -85,6 +139,61 @@ export default function LeadViewPage() {
     } catch {
       // silently fail — button only visible when file exists
     }
+  }
+
+  function handleStartEditEstimation() {
+    setEditTimeline(lead.timeline || "");
+    setEditBudget(lead.budget || "");
+    setEditMilestones(milestones.map((m: { name: string; duration: string; cost: string }) => ({ name: m.name, duration: m.duration, cost: m.cost })));
+    setEditingEstimation(true);
+  }
+
+  function handleCancelEditEstimation() {
+    setEditingEstimation(false);
+  }
+
+  async function handleSaveEstimation() {
+    setEstimationSaving(true);
+    await dispatch(updateLead({
+      leadId: rawLead.id,
+      payload: {
+        timeline: editTimeline.trim() || null,
+        budget: editBudget.trim() || null,
+        estimation: {
+          ...(rawLead.estimation || {}),
+          timeline: editTimeline.trim() || null,
+          budgetRange: editBudget.trim() || null,
+          milestones: editMilestones
+            .filter((m) => m.name.trim())
+            .map((m) => ({ phase: m.name.trim(), duration: m.duration.trim(), costRange: m.cost.trim() })),
+        },
+      },
+    }));
+    setEstimationSaving(false);
+    setEditingEstimation(false);
+  }
+
+  function handleMilestoneChange(index: number, field: "name" | "duration" | "cost", value: string) {
+    setEditMilestones((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
+  }
+
+  function handleAddMilestone() {
+    setEditMilestones((prev) => [...prev, { name: "", duration: "", cost: "" }]);
+  }
+
+  function handleRemoveMilestone(index: number) {
+    setEditMilestones((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // If user types "1000-2000", normalize to "$1000 - $2000" on blur
+  function normalizeCostOnBlur(index: number) {
+    setEditMilestones((prev) => prev.map((m, i) => {
+      if (i !== index) return m;
+      const val = m.cost.trim();
+      if (!val || val.startsWith("$") || !/^\d/.test(val)) return m;
+      const normalized = "$" + val.replace(/\s*[-–—]\s*/, " - $");
+      return { ...m, cost: normalized };
+    }));
   }
 
   return (
@@ -136,10 +245,10 @@ export default function LeadViewPage() {
               </div>
             </div>
             <p className={`text-sm font-semibold mb-2 ${scoreLabelColor(ai.score)}`}>{ai.label}</p>
-            <p className="text-sm text-ternary leading-relaxed mb-4">{ai.description}</p>
+            <NumberedContent text={ai.description} className="mb-4" />
             <div className="border-l-4 border-primary bg-orange-50 rounded-r-xl px-4 py-3 mb-3">
               <p className="text-xs font-semibold text-primary mb-1">Recommended Next Action (Pre-Sales)</p>
-              <p className="text-sm text-ternary leading-relaxed">{ai.nextAction}</p>
+              <NumberedContent text={ai.nextAction} />
             </div>
             <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
               <Info size={14} className="text-blue mt-0.5 shrink-0" />
@@ -168,25 +277,150 @@ export default function LeadViewPage() {
           </Card>
 
           <Card>
-            <SectionTitle icon={<Clock size={18} className="text-primary" />}>
-              Estimated Timeline &amp; Budget
-            </SectionTitle>
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              <div>
-                <p className="text-sm text-ternary mb-1">Estimated Duration</p>
-                <p className="text-2xl font-bold text-foreground">{lead.timeline}</p>
-              </div>
-              <div>
-                <p className="text-sm text-ternary mb-1">Budget Range</p>
-                <p className="text-2xl font-bold text-primary">{lead.budget}</p>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                <Clock size={18} className="text-primary" />
+                Estimated Timeline &amp; Budget
+              </h2>
+              {!editingEstimation && lead.isAnalyzed && (
+                <button
+                  onClick={handleStartEditEstimation}
+                  className="flex items-center gap-1.5 text-xs font-medium text-ternary hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <Pencil size={13} />
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {editingEstimation ? (
+              <div className="space-y-4 mb-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1.5 block">
+                      Estimated Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={editTimeline}
+                      onChange={(e) => setEditTimeline(e.target.value)}
+                      placeholder="e.g. 4–6 months"
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1.5 block">
+                      Budget Range
+                    </label>
+                    <input
+                      type="text"
+                      value={editBudget}
+                      onChange={(e) => setEditBudget(e.target.value)}
+                      placeholder="e.g. $40,000 – $60,000"
+                      className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
                 {lead.aiBudgetRange && (
-                  <p className="text-xs text-ternary mt-1">
-                    AI estimate: <span className="font-medium">{lead.aiBudgetRange}</span>
+                  <p className="text-xs text-ternary">
+                    AI original estimate: <span className="font-medium">{lead.aiBudgetRange}</span>
                   </p>
                 )}
               </div>
-            </div>
-            {milestones.length > 0 && (
+            ) : (
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <p className="text-sm text-ternary mb-1">Estimated Duration</p>
+                  <p className="text-2xl font-bold text-foreground">{lead.timeline}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-ternary mb-1">Budget Range</p>
+                  <p className="text-2xl font-bold text-primary">{lead.budget}</p>
+                  {lead.aiBudgetRange && (
+                    <p className="text-xs text-ternary mt-1">
+                      AI estimate: <span className="font-medium">{lead.aiBudgetRange}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {editingEstimation ? (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-foreground">Milestone Breakdown</p>
+                  <button
+                    onClick={handleAddMilestone}
+                    className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    + Add Row
+                  </button>
+                </div>
+                {editMilestones.length === 0 ? (
+                  <p className="text-xs text-ternary py-2">No milestones — click &quot;+ Add Row&quot; to add one.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[1fr_140px_140px_32px] gap-2 px-1">
+                      <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Phase</span>
+                      <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Duration</span>
+                      <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Cost Range</span>
+                      <span />
+                    </div>
+                    {editMilestones.map((m, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_140px_140px_32px] gap-2 items-center">
+                        <input
+                          type="text"
+                          value={m.name}
+                          onChange={(e) => handleMilestoneChange(i, "name", e.target.value)}
+                          placeholder="e.g. Discovery & Planning"
+                          className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                        />
+                        <input
+                          type="text"
+                          value={m.duration}
+                          onChange={(e) => handleMilestoneChange(i, "duration", e.target.value)}
+                          placeholder="e.g. 2 weeks"
+                          className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                        />
+                        <input
+                          type="text"
+                          value={m.cost}
+                          onChange={(e) => handleMilestoneChange(i, "cost", e.target.value)}
+                          onBlur={() => normalizeCostOnBlur(i)}
+                          placeholder="e.g. $8,000–$10,000"
+                          className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                        />
+                        <button
+                          onClick={() => handleRemoveMilestone(i)}
+                          className="flex items-center justify-center w-8 h-8 rounded-lg text-ternary hover:text-error-text hover:bg-error-bg transition-colors cursor-pointer"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 pt-4">
+                  <button
+                    onClick={handleSaveEstimation}
+                    disabled={estimationSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {estimationSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
+                    {estimationSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={handleCancelEditEstimation}
+                    disabled={estimationSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 border border-border text-ternary rounded-lg text-sm font-semibold hover:bg-off-white transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <X size={13} />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : milestones.length > 0 ? (
               <>
                 <p className="text-sm font-semibold text-foreground mb-3">Milestone Breakdown</p>
                 <div className="space-y-0 border border-border rounded-xl overflow-hidden">
@@ -201,7 +435,7 @@ export default function LeadViewPage() {
                   ))}
                 </div>
               </>
-            )}
+            ) : null}
           </Card>
 
           {suggestedQuestions.length > 0 && (
@@ -328,8 +562,8 @@ function TechCategory({ icon, label, items, dotColor }: { icon: React.ReactNode;
       <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">{icon}{label}</p>
       <ul className="space-y-1">
         {items.map((item) => (
-          <li key={item} className="flex items-center gap-2 text-sm text-ternary">
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+          <li key={item} className="flex items-start gap-2 text-sm text-ternary">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${dotColor}`} />
             {item}
           </li>
         ))}
