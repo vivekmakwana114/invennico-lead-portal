@@ -114,10 +114,8 @@ export function WhatsAppReplyModal({ isOpen, onClose, lead }: WhatsAppReplyModal
     try {
       const res = await api.post("/v1/leads/whatsapp", {
         leadSummary: lead.leadSummary,
-        techStack: lead.techStack ? Object.values(lead.techStack).flat().join(", ") : "N/A",
-        timeline: lead.timeline,
-        budget: lead.budget,
-        originalLead: `Previous draft:\n${savedDraft}\n\nFollow-up notes:\n${followUp.trim() || "None"}`,
+        previousDraft: savedDraft,
+        followUpNotes: followUp.trim() || "No specific changes — improve clarity and flow.",
       });
       const msg: string = res.data?.data?.message || "";
       setRegenMessage(msg);

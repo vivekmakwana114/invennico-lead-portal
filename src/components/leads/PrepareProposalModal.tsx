@@ -55,7 +55,18 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Reset state when modal closes
+  // Sync latest lead values into form every time the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setProposalName(lead.fullProjectName);
+      setClientName(lead.clientContact === "N/A" ? "" : lead.clientContact);
+      setBudget(lead.budget === "N/A" ? "" : lead.budget);
+      setTimeline(lead.timeline === "N/A" ? "" : lead.timeline);
+      setTechStack(buildTechStack(lead));
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset phase/progress when modal closes
   useEffect(() => {
     if (!isOpen) {
       const t = setTimeout(() => {
