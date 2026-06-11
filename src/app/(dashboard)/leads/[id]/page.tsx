@@ -185,15 +185,40 @@ export default function LeadViewPage() {
     setEditMilestones((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function normalizeDollar(val: string): string {
+    const v = val.trim();
+    if (!v || v.startsWith("$") || !/^\d/.test(v)) return v;
+    return "$" + v.replace(/\s*[-–—]\s*/, " - $");
+  }
+
+  function normalizeBudgetOnBlur() {
+    setEditBudget((prev) => normalizeDollar(prev) || prev);
+  }
+
+  function handleBudgetPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text");
+    const normalized = normalizeDollar(pasted);
+    if (normalized !== pasted.trim()) {
+      e.preventDefault();
+      setEditBudget(normalized);
+    }
+  }
+
   // If user types "1000-2000", normalize to "$1000 - $2000" on blur
   function normalizeCostOnBlur(index: number) {
     setEditMilestones((prev) => prev.map((m, i) => {
       if (i !== index) return m;
-      const val = m.cost.trim();
-      if (!val || val.startsWith("$") || !/^\d/.test(val)) return m;
-      const normalized = "$" + val.replace(/\s*[-–—]\s*/, " - $");
-      return { ...m, cost: normalized };
+      return { ...m, cost: normalizeDollar(m.cost) || m.cost };
     }));
+  }
+
+  function handleMilestoneCostPaste(index: number, e: React.ClipboardEvent<HTMLInputElement>) {
+    const pasted = e.clipboardData.getData("text");
+    const normalized = normalizeDollar(pasted);
+    if (normalized !== pasted.trim()) {
+      e.preventDefault();
+      handleMilestoneChange(index, "cost", normalized);
+    }
   }
 
   return (
@@ -316,6 +341,8 @@ export default function LeadViewPage() {
                       type="text"
                       value={editBudget}
                       onChange={(e) => setEditBudget(e.target.value)}
+                      onBlur={normalizeBudgetOnBlur}
+                      onPaste={handleBudgetPaste}
                       placeholder="e.g. $40,000 – $60,000"
                       className="w-full px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                     />
@@ -388,6 +415,7 @@ export default function LeadViewPage() {
                           value={m.cost}
                           onChange={(e) => handleMilestoneChange(i, "cost", e.target.value)}
                           onBlur={() => normalizeCostOnBlur(i)}
+                          onPaste={(e) => handleMilestoneCostPaste(i, e)}
                           placeholder="e.g. $8,000–$10,000"
                           className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                         />
@@ -538,6 +566,13 @@ export default function LeadViewPage() {
               className="w-full px-4 py-2.5 text-sm"
               onClick={() => handleStatusChange("qualified")}
               disabled={actionLoading || rawLead.status === "qualified"}
+            />
+            <Button
+              label="Mark as Won"
+              variant="won"
+              className="w-full px-4 py-2.5 text-sm"
+              onClick={() => handleStatusChange("won")}
+              disabled={actionLoading || rawLead.status === "won"}
             />
             <Button
               label="Mark as Dropped"
