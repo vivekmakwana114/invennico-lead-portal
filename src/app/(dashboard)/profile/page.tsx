@@ -10,6 +10,8 @@ import {
   Calendar,
   Eye,
   EyeOff,
+  Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
@@ -19,6 +21,8 @@ import {
   updateUserProfile,
   changeUserPassword,
   uploadUserAvatar,
+  uploadUserLogo,
+  removeUserLogo,
 } from "@/state/users/usersSlice";
 import { BASE_URL } from "@/lib/api";
 
@@ -134,6 +138,9 @@ export default function ProfilePage() {
     }
   }
 
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoError, setLogoError] = useState(false);
+
   const [avatarError, setAvatarError] = useState(false);
 
   const rawAvatar = profile?.avatar;
@@ -148,6 +155,40 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAvatarError(false);
   }, [savedAvatarUrl]);
+
+  const rawLogo = profile?.logoPath;
+  const savedLogoUrl = rawLogo
+    ? rawLogo.startsWith("http://") || rawLogo.startsWith("https://")
+      ? rawLogo
+      : `${BASE_URL}${rawLogo}`
+    : null;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLogoError(false);
+  }, [savedLogoUrl]);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const result = await dispatch(uploadUserLogo(file));
+    if (uploadUserLogo.fulfilled.match(result)) {
+      toast.success("Logo uploaded successfully.");
+      setLogoError(false);
+    } else {
+      toast.error((result.payload as string) || "Failed to upload logo.");
+    }
+  }
+
+  async function handleLogoRemove() {
+    const result = await dispatch(removeUserLogo());
+    if (removeUserLogo.fulfilled.match(result)) {
+      toast.success("Logo removed.");
+    } else {
+      toast.error((result.payload as string) || "Failed to remove logo.");
+    }
+  }
 
   const joinedDate = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("en-US", {
@@ -339,6 +380,58 @@ export default function ProfilePage() {
             >
               {actionLoading ? "Saving..." : "Save Changes"}
             </button>
+          </div>
+
+          {/* Company Logo */}
+          <div className="border-t border-border pt-6">
+            <h2 className="text-base font-semibold text-foreground mb-1">
+              Company Logo
+            </h2>
+            <p className="text-sm text-ternary mb-5">
+              Appears on top of every page of generated proposals
+            </p>
+            <div className="flex items-center gap-5">
+              <div className="w-36 h-14 border border-border rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                {savedLogoUrl && !logoError ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={savedLogoUrl}
+                    alt="Company Logo"
+                    className="max-w-full max-h-full object-contain p-1"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <span className="text-xs text-ternary">No logo</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer">
+                  <Upload size={14} />
+                  {actionLoading ? "Uploading…" : savedLogoUrl ? "Replace" : "Upload"}
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </label>
+                {savedLogoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    disabled={actionLoading}
+                    className="flex items-center gap-1.5 px-4 py-2 border border-border hover:border-red-300 hover:text-red-600 text-ternary text-sm font-semibold rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    <X size={13} />
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-ternary mt-3">
+              JPG or PNG · max 1 MB · recommended 300 × 100 px
+            </p>
           </div>
 
           {/* Change Password */}

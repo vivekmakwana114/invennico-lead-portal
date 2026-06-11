@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, Check, X, Pencil } from "lucide-react";
+import { Trash2, Plus, Check, X, Pencil, Upload } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast } from "sonner";
@@ -14,7 +14,10 @@ import {
   updateUser,
   deleteUser,
   grantUserCredits,
+  adminUploadUserLogo,
+  adminRemoveUserLogo,
 } from "@/state/users/usersSlice";
+import { BASE_URL } from "@/lib/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -41,8 +44,8 @@ const statusOptions = [
   { label: "Inactive", value: "inactive" },
 ];
 
-// Name | Email | Role | Status | Credits Used | Assign Credits | Actions
-const colGrid = "grid-cols-[180px_220px_130px_120px_120px_200px_80px] gap-x-4";
+// Name | Email | Role | Status | Credits Used | Assign Credits | Logo | Actions
+const colGrid = "grid-cols-[180px_220px_130px_120px_120px_200px_90px_80px] gap-x-4";
 
 export function UserManagementTab() {
   const dispatch = useAppDispatch();
@@ -121,6 +124,29 @@ export function UserManagementTab() {
     }
   }
 
+  // ── Logo management ──────────────────────────────────────────────────────────
+
+  async function handleAdminLogoUpload(userId: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const result = await dispatch(adminUploadUserLogo({ userId, file }));
+    if (adminUploadUserLogo.rejected.match(result)) {
+      toast.error((result.payload as string) || "Failed to upload logo.");
+    } else {
+      toast.success("Logo uploaded.");
+    }
+  }
+
+  async function handleAdminLogoRemove(userId: string) {
+    const result = await dispatch(adminRemoveUserLogo(userId));
+    if (adminRemoveUserLogo.rejected.match(result)) {
+      toast.error((result.payload as string) || "Failed to remove logo.");
+    } else {
+      toast.success("Logo removed.");
+    }
+  }
+
   // ── Assign credits stepper ───────────────────────────────────────────────────
 
   function openAssign(id: string) {
@@ -178,7 +204,7 @@ export function UserManagementTab() {
 
             {/* Table header */}
             <div className={cn("grid px-4 py-3 bg-gray-50 border-b border-border rounded-tl-xl rounded-tr-xl", colGrid)}>
-              {["Name", "Email", "Role", "Status", "Credits Used", "Assign Credits", "Actions"].map((col) => (
+              {["Name", "Email", "Role", "Status", "Credits Used", "Assign Credits", "Logo", "Actions"].map((col) => (
                 <span key={col} className="text-xs font-semibold text-ternary uppercase tracking-wide">
                   {col}
                 </span>
@@ -340,6 +366,46 @@ export function UserManagementTab() {
                     </button>
                   )}
 
+                  {/* Logo */}
+                  {(() => {
+                    const logoPath = member.logoPath;
+                    const logoUrl = logoPath
+                      ? logoPath.startsWith("http") ? logoPath : `${BASE_URL}${logoPath}`
+                      : null;
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        {logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={logoUrl}
+                            alt="logo"
+                            className="h-6 max-w-[48px] object-contain rounded border border-border bg-gray-50"
+                          />
+                        ) : null}
+                        <label className="text-ternary hover:text-primary transition-colors cursor-pointer shrink-0" title="Upload logo">
+                          <Upload size={14} />
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            className="hidden"
+                            onChange={(e) => handleAdminLogoUpload(member.id, e)}
+                          />
+                        </label>
+                        {logoUrl && (
+                          <button
+                            type="button"
+                            title="Remove logo"
+                            onClick={() => handleAdminLogoRemove(member.id)}
+                            disabled={actionLoading}
+                            className="text-ternary hover:text-red-500 disabled:opacity-50 transition-colors cursor-pointer shrink-0"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Actions */}
                   {isEditing ? (
                     <div className="flex items-center gap-2">
@@ -406,6 +472,7 @@ export function UserManagementTab() {
                   onChange={(role) => setNewUser({ ...newUser, role: role as "admin" | "partner" })}
                 />
                 <span className="text-sm text-ternary px-1">Active</span>
+                <span className="text-sm text-ternary">—</span>
                 <span className="text-sm text-ternary">—</span>
                 <span className="text-sm text-ternary">—</span>
                 <div className="flex items-center gap-2">
