@@ -38,6 +38,11 @@ export interface ProposalDoc {
   generatedAt?: string | null;
 }
 
+export interface PdfFile {
+  fileName: string | null;
+  originalName: string | null;
+}
+
 export interface LeadDetail {
   id: string;
   leadId: string;
@@ -62,4 +67,5 @@ export interface LeadDetail {
   whatsappDraft: string | null;
   whatsappDraftCount: number;
   proposalDoc?: ProposalDoc | null;
+  pdfFile?: PdfFile | null;
 }

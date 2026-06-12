@@ -77,6 +77,7 @@ export function mapToLeadDetail(lead: any) {
     whatsappDraft: lead.whatsappDraft || null,
     whatsappDraftCount: lead.whatsappDraftCount ?? 0,
     proposalDoc: lead.proposalDoc || null,
+    pdfFile: lead.pdfFile || null,
   };
 }
 

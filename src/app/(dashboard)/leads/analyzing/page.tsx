@@ -45,6 +45,8 @@ export default function AnalyzingPage() {
           notes: pending.notes || null,
           attachments: Array.isArray(pending.attachments) ? pending.attachments : [],
           pdfContent: pending.pdfContent || null,
+          pdfFileName: pending.pdfFileName || null,
+          pdfOriginalName: pending.pdfOriginalName || null,
           isAnalyzed: true,
         });
 

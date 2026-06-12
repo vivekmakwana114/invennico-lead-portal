@@ -18,6 +18,9 @@ export interface CreateLeadPayload {
   attachments?: string[];
   clientContact?: string | null;
   isAnalyzed?: boolean;
+  pdfContent?: string | null;
+  pdfFileName?: string | null;
+  pdfOriginalName?: string | null;
   analysis?: {
     summary?: string | null;
     qualification?: {
@@ -109,6 +112,10 @@ class LeadsService {
 
   downloadProposal(leadId: string) {
     return api.get(`/v1/leads/${leadId}/proposal/download`, { responseType: "blob" });
+  }
+
+  getLeadPdf(leadId: string) {
+    return api.get(`/v1/leads/${leadId}/pdf`, { responseType: "blob" });
   }
 }
 
