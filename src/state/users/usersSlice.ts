@@ -139,6 +139,62 @@ export const deleteUser = createAsyncThunk(
   }
 );
 
+export const uploadUserLogo = createAsyncThunk(
+  "users/uploadLogo",
+  async (file: File, thunkAPI) => {
+    try {
+      const res = await usersService.uploadLogo(file);
+      return res.data?.data?.user || null;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to upload logo"
+      );
+    }
+  }
+);
+
+export const removeUserLogo = createAsyncThunk(
+  "users/removeLogo",
+  async (_, thunkAPI) => {
+    try {
+      const res = await usersService.removeLogo();
+      return res.data?.data?.user || null;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to remove logo"
+      );
+    }
+  }
+);
+
+export const adminUploadUserLogo = createAsyncThunk(
+  "users/adminUploadLogo",
+  async ({ userId, file }: { userId: string; file: File }, thunkAPI) => {
+    try {
+      const res = await usersService.adminUploadLogo(userId, file);
+      return res.data?.data?.user || null;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to upload logo"
+      );
+    }
+  }
+);
+
+export const adminRemoveUserLogo = createAsyncThunk(
+  "users/adminRemoveLogo",
+  async (userId: string, thunkAPI) => {
+    try {
+      const res = await usersService.adminRemoveLogo(userId);
+      return res.data?.data?.user || null;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to remove logo"
+      );
+    }
+  }
+);
+
 export const grantUserCredits = createAsyncThunk(
   "users/grantCredits",
   async ({ userId, amount, note }: { userId: string; amount: number; note?: string }, thunkAPI) => {
@@ -231,6 +287,70 @@ const usersSlice = createSlice({
         state.profile = action.payload;
       })
       .addCase(uploadUserAvatar.rejected, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
+      })
+
+      // uploadUserLogo
+      .addCase(uploadUserLogo.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(uploadUserLogo.fulfilled, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.profile = action.payload;
+      })
+      .addCase(uploadUserLogo.rejected, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
+      })
+
+      // removeUserLogo
+      .addCase(removeUserLogo.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(removeUserLogo.fulfilled, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.profile = action.payload;
+      })
+      .addCase(removeUserLogo.rejected, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
+      })
+
+      // adminUploadUserLogo
+      .addCase(adminUploadUserLogo.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(adminUploadUserLogo.fulfilled, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        if (action.payload) {
+          state.usersList = state.usersList.map((u) =>
+            u.id === action.payload.id ? action.payload : u
+          );
+        }
+      })
+      .addCase(adminUploadUserLogo.rejected, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        state.actionError = action.payload;
+      })
+
+      // adminRemoveUserLogo
+      .addCase(adminRemoveUserLogo.pending, (state) => {
+        state.actionLoading = true;
+        state.actionError = null;
+      })
+      .addCase(adminRemoveUserLogo.fulfilled, (state, action: PayloadAction<any>) => {
+        state.actionLoading = false;
+        if (action.payload) {
+          state.usersList = state.usersList.map((u) =>
+            u.id === action.payload.id ? action.payload : u
+          );
+        }
+      })
+      .addCase(adminRemoveUserLogo.rejected, (state, action: PayloadAction<any>) => {
         state.actionLoading = false;
         state.actionError = action.payload;
       })

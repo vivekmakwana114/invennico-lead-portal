@@ -85,6 +85,30 @@ class UsersService {
   grantCredits(userId: string, amount: number, note?: string): Promise<any> {
     return api.post(`/v1/users/${userId}/credits`, { amount, note });
   }
+
+  uploadLogo(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append("logo", file);
+    return api.post("/v1/users/profile/logo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  removeLogo(): Promise<any> {
+    return api.delete("/v1/users/profile/logo");
+  }
+
+  adminUploadLogo(userId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append("logo", file);
+    return api.post(`/v1/users/${userId}/logo`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  adminRemoveLogo(userId: string): Promise<any> {
+    return api.delete(`/v1/users/${userId}/logo`);
+  }
 }
 
 export const usersService = new UsersService();

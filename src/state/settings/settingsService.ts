@@ -57,6 +57,28 @@ class SettingsService {
   updatePrompt(aiPrompt: string) {
     return api.put("/v1/settings/prompt", { aiPrompt });
   }
+
+  uploadProposalTemplate(file: File) {
+    const form = new FormData();
+    form.append("template", file);
+    return api.post("/v1/settings/proposal/template", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  }
+
+  downloadProposalTemplate() {
+    // Trigger a browser download via a hidden anchor — bearer token injected automatically
+    api
+      .get("/v1/settings/proposal/template/download", { responseType: "blob" })
+      .then((res) => {
+        const url = URL.createObjectURL(res.data as Blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "proposal-template.docx";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+  }
 }
 
 export const settingsService = new SettingsService();

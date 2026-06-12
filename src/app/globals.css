@@ -63,3 +63,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   min-height: 100vh;
 }
+
+/* docx-preview — keep pages centred and scrollable inside the settings panel */
+.docx-preview-wrapper .docx-wrapper {
+  background: #f3f4f6 !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+.docx-preview-wrapper .docx-wrapper > section.docx {
+  background: #ffffff !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15) !important;
+  margin-bottom: 16px !important;
+}

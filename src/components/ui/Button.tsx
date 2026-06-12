@@ -6,7 +6,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   icon?: React.ReactNode;
   iconPlacement?: "left" | "right";
-  variant?: "primary" | "secondary" | "blue" | "qualified" | "destructive";
+  variant?: "primary" | "secondary" | "blue" | "qualified" | "won" | "destructive";
 }
 
 export function Button({
@@ -25,6 +25,7 @@ export function Button({
     secondary: "bg-white text-ternary border border-border hover:bg-primary hover:text-white hover:border-primary active:opacity-90 transition-colors",
     blue: "bg-blue text-white hover:opacity-90 transition-opacity",
     qualified: "bg-success-bg text-success-text border border-success-border hover:bg-green-100/50",
+    won: "bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100/50",
     destructive: "bg-error-bg text-error-text border border-error-border hover:bg-red-100/50",
   };
 
