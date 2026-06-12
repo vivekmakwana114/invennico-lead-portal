@@ -127,6 +127,7 @@ export default function CreateLeadPage() {
       .map((f) => f.pdfText as string)
       .join("\n\n---\n\n");
 
+    const firstPdf = successfulFiles[0];
     sessionStorage.setItem(
       "pending_lead_data",
       JSON.stringify({
@@ -136,6 +137,8 @@ export default function CreateLeadPage() {
         notes: form.notes,
         attachments: successfulFiles.map((f) => f.serverFileName as string),
         pdfContent: pdfContent || null,
+        pdfFileName: firstPdf?.serverFileName || null,
+        pdfOriginalName: firstPdf?.file.name || null,
       })
     );
     router.push("/leads/analyzing");

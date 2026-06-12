@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft, Calendar, MapPin, User, Sparkles, Monitor, Server,
   Plug, Cloud, Clock, MessageCircle, Info, CheckCircle2, RefreshCw,
-  Download, MessageSquare, FileText, Pencil, X, Check,
+  Download, MessageSquare, FileText, Pencil, X, Check, Loader2, Paperclip,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -96,10 +96,35 @@ export default function LeadViewPage() {
   const [editMilestones, setEditMilestones] = useState<{ name: string; duration: string; cost: string }[]>([]);
   const [estimationSaving, setEstimationSaving] = useState(false);
 
+  const [activeTab, setActiveTab] = useState("overview");
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const pdfBlobUrlRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (id) dispatch(fetchLead(id));
     return () => { dispatch(clearCurrentLead()); };
   }, [dispatch, id]);
+
+  // Revoke the blob URL only when the component unmounts, not on tab switch
+  useEffect(() => {
+    return () => { if (pdfBlobUrlRef.current) URL.revokeObjectURL(pdfBlobUrlRef.current); };
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "attachments" || !rawLead?.pdfFile?.fileName || pdfBlobUrl) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    leadsService.getLeadPdf(rawLead.id)
+      .then((res) => {
+        const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+        pdfBlobUrlRef.current = url;
+        setPdfBlobUrl(url);
+      })
+      .catch(() => setPdfError("Failed to load PDF. Please try again."))
+      .finally(() => setPdfLoading(false));
+  }, [activeTab, rawLead?.id, rawLead?.pdfFile?.fileName, pdfBlobUrl]);
 
   if (isLoading) {
     return (
@@ -227,6 +252,26 @@ export default function LeadViewPage() {
         <ArrowLeft size={15} />Back to Leads
       </Link>
 
+      <div className="flex border-b border-border overflow-x-auto">
+        {[
+          { id: "overview", label: "Overview", icon: <FileText size={15} /> },
+          { id: "attachments", label: "Attachments", icon: <Paperclip size={15} /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer border-b-2 shrink-0 ${
+              activeTab === tab.id
+                ? "text-primary border-primary bg-primary/10"
+                : "text-ternary border-transparent hover:text-foreground hover:border-border"
+            }`}
+          >
+            {tab.icon}{tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "overview" && (
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_288px] gap-6 items-start">
 
         {/* ── Left ────────────────────────────────────────────────────────── */}
@@ -584,6 +629,30 @@ export default function LeadViewPage() {
           </Card>
         </div>
       </div>
+
+      )} {/* end overview tab */}
+
+      {activeTab === "attachments" && (
+        <div className="bg-white border border-border rounded-2xl overflow-hidden min-h-[400px]">
+          {rawLead.pdfFile?.fileName ? (
+            pdfLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 size={24} className="animate-spin text-primary" />
+              </div>
+            ) : pdfError ? (
+              <div className="flex items-center justify-center h-64 text-sm text-error-text">{pdfError}</div>
+            ) : pdfBlobUrl ? (
+              <iframe src={pdfBlobUrl} className="w-full h-[75vh]" title="Lead PDF Attachment" />
+            ) : null
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-ternary">
+              <Paperclip size={32} className="opacity-30" />
+              <p className="text-sm">No PDF attachment for this lead.</p>
+              <p className="text-xs text-ternary/70">Upload a PDF when creating a lead to see it here.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <WhatsAppReplyModal isOpen={whatsappOpen} onClose={() => setWhatsappOpen(false)} lead={lead} />
       <PrepareProposalModal isOpen={proposalOpen} onClose={() => setProposalOpen(false)} lead={lead} />
