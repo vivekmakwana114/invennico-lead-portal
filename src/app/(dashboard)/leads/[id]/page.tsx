@@ -16,6 +16,7 @@ import { PrepareProposalModal } from "@/components/leads/PrepareProposalModal";
 import { useAppDispatch, useAppSelector } from "@/state/hooks";
 import { fetchLead, updateLead, mapToLeadDetail, clearCurrentLead } from "@/state/leads/leadsSlice";
 import { leadsService } from "@/state/leads/leadsService";
+import { LeadResearchTab } from "@/components/leads/LeadResearchTab";
 
 /**
  * Splits text that contains inline numbered items like "(1) ..., (2) ..."
@@ -86,6 +87,7 @@ export default function LeadViewPage() {
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
   const { currentLead: rawLead, isLoading, actionLoading } = useAppSelector((s) => s.leads);
+  const userRole = useAppSelector((s) => s.auth.user?.role);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
 
@@ -256,6 +258,7 @@ export default function LeadViewPage() {
         {[
           { id: "overview", label: "Overview", icon: <FileText size={15} /> },
           { id: "attachments", label: "Attachments", icon: <Paperclip size={15} /> },
+          ...(userRole === "admin" ? [{ id: "lead-research", label: "Lead Research", icon: <Sparkles size={15} /> }] : []),
         ].map((tab) => (
           <button
             key={tab.id}
@@ -652,6 +655,10 @@ export default function LeadViewPage() {
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === "lead-research" && userRole === "admin" && (
+        <LeadResearchTab leadResearch={rawLead.leadResearch} />
       )}
 
       <WhatsAppReplyModal isOpen={whatsappOpen} onClose={() => setWhatsappOpen(false)} lead={lead} />
