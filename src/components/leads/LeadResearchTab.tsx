@@ -236,7 +236,7 @@ export function LeadResearchTab({ leadResearch }: Props) {
             {budget?.estimatedRange && (
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Realistic Estimate</span>
-                <span className="text-lg font-bold text-primary">{budget.estimatedRange}</span>
+                <span className="text-sm text-ternary leading-relaxed">{budget.estimatedRange}</span>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
@@ -305,6 +305,7 @@ export function LeadResearchTab({ leadResearch }: Props) {
           </ol>
         </Card>
       )}
+
     </div>
   );
 }
