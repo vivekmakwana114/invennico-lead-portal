@@ -23,6 +23,7 @@ export interface Lead extends Record<string, unknown> {
   projectName: string;
   tags: LeadTag[];
   source: string;
+  createdByName: string | null;
   dateReceived: string;
   status: LeadStatus;
   budget: string;
@@ -95,7 +96,14 @@ export const LEADS_COLUMNS: Column<Lead>[] = [
   {
     key: "source",
     header: "Source",
-    className: "text-sm text-ternary whitespace-nowrap",
+    render: (value, row) => (
+      <div>
+        <p className="text-sm text-ternary whitespace-nowrap">{value as string}</p>
+        {row.createdByName && (
+          <p className="text-xs text-foreground whitespace-nowrap mt-0.5">{row.createdByName as string}</p>
+        )}
+      </div>
+    ),
   },
   {
     key: "dateReceived",
@@ -115,7 +123,9 @@ export const LEADS_COLUMNS: Column<Lead>[] = [
   {
     key: "timeline",
     header: "Timeline",
-    className: "text-sm text-ternary whitespace-nowrap",
+    render: (value) => (
+      <p className="text-sm text-ternary  wrap-break-words">{value as string}</p>
+    ),
   },
   {
     key: "_actions",

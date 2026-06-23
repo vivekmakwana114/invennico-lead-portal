@@ -9,8 +9,10 @@ import { GridComponent } from "@/components/ui/GridComponent";
 import { Pagination } from "@/components/ui/Pagination";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { LEADS_COLUMNS, type LeadStatus } from "@/components/leads/LeadsColumns";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/state/hooks";
 import { fetchLeads, fetchLeadsStats, mapToGridRow } from "@/state/leads/leadsSlice";
+import { fetchProfile } from "@/state/users/usersSlice";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -40,6 +42,8 @@ export default function LeadsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { leadsList, totalResults, isLoading, stats } = useAppSelector((s) => s.leads);
+  const { user } = useAppSelector((s) => s.auth);
+  const profile = useAppSelector((s) => s.users.profile);
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,6 +64,7 @@ export default function LeadsPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => { dispatch(fetchLeadsStats()); }, [dispatch]);
+  useEffect(() => { if (user?.role === "partner") dispatch(fetchProfile()); }, [dispatch, user?.role]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -119,7 +124,17 @@ export default function LeadsPage() {
           iconPlacement="left"
           variant="primary"
           className="px-4 py-2.5"
-          onClick={() => router.push("/leads/create")}
+          onClick={() => {
+            if (user?.role === "partner") {
+              const creditSource = profile ?? user;
+              const available = (creditSource.totalCredits ?? 0) - (creditSource.consumedCredits ?? 0);
+              if (available <= 0) {
+                toast.error("Contact admin to renew/add credit");
+                return;
+              }
+            }
+            router.push("/leads/create");
+          }}
         />
       </div>
 

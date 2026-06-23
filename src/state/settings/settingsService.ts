@@ -1,5 +1,13 @@
 import { api } from "@/lib/api";
 
+export interface AiPrompts {
+  leadAnalysis: string;
+  whatsappFirst: string;
+  whatsappRegen: string;
+  geminiResearch: string;
+  proposal: string;
+}
+
 export interface ProposalSection {
   key: string;
   enabled: boolean;
@@ -54,8 +62,8 @@ class SettingsService {
     return api.get("/v1/settings/prompt");
   }
 
-  updatePrompt(aiPrompt: string) {
-    return api.put("/v1/settings/prompt", { aiPrompt });
+  updateSinglePrompt(key: keyof AiPrompts, value: string) {
+    return api.put(`/v1/settings/prompt/${key}`, { value });
   }
 
   uploadProposalTemplate(file: File) {

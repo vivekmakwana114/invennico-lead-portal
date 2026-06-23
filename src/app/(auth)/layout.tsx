@@ -26,7 +26,7 @@ export default function AuthLayout({
     }
   }, [isMounted, tokens, user, router]);
 
-  if (!isMounted || (tokens && user)) {
+  if (isMounted && tokens && user) {
     return null;
   }
 
