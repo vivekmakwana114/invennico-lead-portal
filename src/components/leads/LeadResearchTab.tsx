@@ -1,45 +1,36 @@
 "use client";
 
 import {
-  User, Building2, MapPin, Briefcase, Globe, Lightbulb,
-  DollarSign, Clock, TrendingUp, Layers, Cpu, Plug,
-  Monitor, AlertCircle, CheckCircle2,
+  User, Building2, MapPin, Briefcase, Globe, DollarSign,
+  AlertCircle, CheckCircle2,
+  Code2, Link2, AtSign, ExternalLink, Phone,
 } from "lucide-react";
 
 interface LeadResearch {
   client?: {
     name?: string | null;
+    contact?: string | null;
+    socialLinks?: {
+      linkedin?: string | null;
+      github?: string | null;
+      twitter?: string | null;
+      personalSite?: string | null;
+    };
     company?: string | null;
     location?: string | null;
     industry?: string | null;
-    companySize?: string | null;
     businessDescription?: string | null;
   };
-  platform?: {
-    source?: string | null;
-    postingContext?: string | null;
-    urgencyLevel?: string | null;
-    typicalBudgetRange?: string | null;
-  };
-  projectStatus?: {
-    phase?: string | null;
-    decisionTimeline?: string | null;
-    competitiveLandscape?: string | null;
-  };
+  platforms?: {
+    name?: string | null;
+    projectUrl?: string | null;
+    overview?: string | null;
+  }[];
   budget?: {
     stated?: string | null;
-    estimatedRange?: string | null;
     currency?: string | null;
     paymentPreference?: string | null;
   };
-  coreRequirements?: {
-    summary?: string | null;
-    features?: string[];
-    technicalConstraints?: string[];
-    integrations?: string[];
-    platforms?: string[];
-  };
-  researchInsights?: string[];
   generatedAt?: string | null;
 }
 
@@ -60,11 +51,10 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 }
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs font-semibold text-ternary uppercase tracking-wide">{label}</span>
-      <span className="text-sm text-foreground">{value}</span>
+      <span className={`text-sm ${value ? "text-foreground" : "text-ternary/50"}`}>{value || "N/A"}</span>
     </div>
   );
 }
@@ -82,13 +72,6 @@ function TagList({ items, color = "bg-off-white text-foreground border-border" }
   );
 }
 
-function urgencyColor(level: string | null | undefined) {
-  if (!level) return "bg-off-white text-ternary border-border";
-  if (level.toLowerCase() === "high") return "bg-error-bg text-error-text border-red-200";
-  if (level.toLowerCase() === "medium") return "bg-yellow-50 text-yellow-700 border-yellow-200";
-  return "bg-success-bg text-success-text border-green-200";
-}
-
 export function LeadResearchTab({ leadResearch }: Props) {
   if (!leadResearch?.generatedAt) {
     return (
@@ -102,11 +85,17 @@ export function LeadResearchTab({ leadResearch }: Props) {
     );
   }
 
-  const { client, platform, projectStatus, budget, coreRequirements, researchInsights, generatedAt } = leadResearch;
+  const { client, platforms, budget, generatedAt } = leadResearch;
 
   const generatedDate = generatedAt
     ? new Date(generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
     : null;
+
+  const hasSocialLinks =
+    client?.socialLinks?.linkedin ||
+    client?.socialLinks?.github ||
+    client?.socialLinks?.twitter ||
+    client?.socialLinks?.personalSite;
 
   return (
     <div className="space-y-5 pb-4">
@@ -119,126 +108,143 @@ export function LeadResearchTab({ leadResearch }: Props) {
         </div>
       )}
 
+      {/* Client Identity — full width */}
+      <Card>
+        <SectionTitle icon={<User size={18} className="text-primary" />}>Client Information</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mb-4">
+          <div className="flex items-start gap-2">
+            <User size={14} className="text-ternary shrink-0 mt-0.5" />
+            <Field label="Name" value={client?.name} />
+          </div>
+          <div className="flex items-start gap-2">
+            <Phone size={14} className="text-ternary shrink-0 mt-0.5" />
+            <Field label="Contact" value={client?.contact} />
+          </div>
+          <div className="flex items-start gap-2">
+            <Building2 size={14} className="text-ternary shrink-0 mt-0.5" />
+            <Field label="Company" value={client?.company} />
+          </div>
+          <div className="flex items-start gap-2">
+            <MapPin size={14} className="text-ternary shrink-0 mt-0.5" />
+            <Field label="Location" value={client?.location} />
+          </div>
+          <div className="flex items-start gap-2">
+            <Briefcase size={14} className="text-ternary shrink-0 mt-0.5" />
+            <Field label="Industry" value={client?.industry} />
+          </div>
+        </div>
+
+        <div className="pb-4 mb-4 border-b border-border">
+          <span className="text-xs font-semibold text-ternary uppercase tracking-wide">About</span>
+          <p className={`text-sm mt-0.5 leading-relaxed ${client?.businessDescription ? "text-ternary" : "text-ternary/50"}`}>
+            {client?.businessDescription || "N/A"}
+          </p>
+        </div>
+
+        {/* Social Links */}
+        <div>
+          <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-2">Social Profiles</p>
+          {hasSocialLinks ? (
+            <div className="flex flex-wrap gap-2">
+              {client?.socialLinks?.linkedin && (
+                <a
+                  href={client.socialLinks.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                >
+                  <Link2 size={13} /> LinkedIn
+                </a>
+              )}
+              {client?.socialLinks?.github && (
+                <a
+                  href={client.socialLinks.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
+                >
+                  <Code2 size={13} /> GitHub
+                </a>
+              )}
+              {client?.socialLinks?.twitter && (
+                <a
+                  href={client.socialLinks.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 transition-colors"
+                >
+                  <AtSign size={13} /> X / Twitter
+                </a>
+              )}
+              {client?.socialLinks?.personalSite && (
+                <a
+                  href={client.socialLinks.personalSite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-off-white text-foreground border border-border hover:bg-border transition-colors"
+                >
+                  <Globe size={13} /> Website
+                </a>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-ternary/50">N/A</span>
+          )}
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Client Profile */}
+        {/* Platform Discovery */}
         <Card>
-          <SectionTitle icon={<Building2 size={18} className="text-primary" />}>Client Profile</SectionTitle>
-          <div className="space-y-3">
-            {client?.name && (
-              <div className="flex items-center gap-2">
-                <User size={14} className="text-ternary shrink-0" />
-                <span className="text-sm text-foreground font-medium">{client.name}</span>
-              </div>
-            )}
-            {client?.company && (
-              <div className="flex items-center gap-2">
-                <Building2 size={14} className="text-ternary shrink-0" />
-                <span className="text-sm text-foreground">{client.company}</span>
-              </div>
-            )}
-            {client?.location && (
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-ternary shrink-0" />
-                <span className="text-sm text-foreground">{client.location}</span>
-              </div>
-            )}
-            {client?.industry && (
-              <div className="flex items-center gap-2">
-                <Briefcase size={14} className="text-ternary shrink-0" />
-                <span className="text-sm text-foreground">{client.industry}</span>
-              </div>
-            )}
-            {client?.companySize && (
-              <div className="flex items-center gap-2">
-                <Globe size={14} className="text-ternary shrink-0" />
-                <span className="text-sm text-foreground">{client.companySize}</span>
-              </div>
-            )}
-            {client?.businessDescription && (
-              <p className="text-sm text-ternary leading-relaxed pt-1 border-t border-border mt-3">
-                {client.businessDescription}
-              </p>
-            )}
-            {!client?.name && !client?.company && !client?.businessDescription && (
-              <p className="text-sm text-ternary">No client information could be identified.</p>
-            )}
-          </div>
-        </Card>
-
-        {/* Platform & Context */}
-        <Card>
-          <SectionTitle icon={<Globe size={18} className="text-blue" />}>Platform & Context</SectionTitle>
-          <div className="space-y-4">
-            {platform?.source && (
-              <Field label="Source Platform" value={platform.source} />
-            )}
-            {platform?.urgencyLevel && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Urgency</span>
-                <span className={`self-start px-2.5 py-1 rounded-lg text-xs font-semibold border ${urgencyColor(platform.urgencyLevel)}`}>
-                  {platform.urgencyLevel}
-                </span>
-              </div>
-            )}
-            {platform?.typicalBudgetRange && (
-              <Field label="Typical Budget on This Platform" value={platform.typicalBudgetRange} />
-            )}
-            {platform?.postingContext && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Posting Context</span>
-                <p className="text-sm text-ternary leading-relaxed">{platform.postingContext}</p>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Project Status */}
-        <Card>
-          <SectionTitle icon={<TrendingUp size={18} className="text-purple" />}>Project Status</SectionTitle>
-          <div className="space-y-3">
-            {projectStatus?.phase && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Buying Phase</span>
-                <span className="self-start px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                  {projectStatus.phase}
-                </span>
-              </div>
-            )}
-            {projectStatus?.decisionTimeline && (
-              <div className="flex items-start gap-2">
-                <Clock size={14} className="text-ternary shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-0.5">Decision Timeline</p>
-                  <p className="text-sm text-foreground">{projectStatus.decisionTimeline}</p>
+          <SectionTitle icon={<Globe size={18} className="text-blue" />}>Platform Discovery</SectionTitle>
+          {platforms && platforms.length > 0 ? (
+            <div className="space-y-5">
+              {platforms.map((p, i) => (
+                <div key={i} className={i > 0 ? "pt-4 border-t border-border" : ""}>
+                  <div className="space-y-3">
+                    <Field label="Platform" value={p.name} />
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Project Posting URL</span>
+                      {p.projectUrl ? (
+                        <a
+                          href={p.projectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start gap-1.5 text-sm text-primary hover:underline break-all"
+                        >
+                          <ExternalLink size={13} className="shrink-0 mt-0.5" />
+                          {p.projectUrl}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-ternary/50">N/A</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Platform Overview</span>
+                      <p className={`text-sm leading-relaxed ${p.overview ? "text-ternary" : "text-ternary/50"}`}>{p.overview || "N/A"}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-            {projectStatus?.competitiveLandscape && (
-              <div className="flex flex-col gap-1 pt-2 border-t border-border">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Competitive Landscape</span>
-                <p className="text-sm text-ternary leading-relaxed">{projectStatus.competitiveLandscape}</p>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ternary/50">N/A — no public posting found</p>
+          )}
         </Card>
 
-        {/* Budget Intelligence */}
+        {/* Budget */}
         <Card>
-          <SectionTitle icon={<DollarSign size={18} className="text-success-text" />}>Budget Intelligence</SectionTitle>
+          <SectionTitle icon={<DollarSign size={18} className="text-success-text" />}>Client Budget</SectionTitle>
           <div className="space-y-3">
-            {budget?.stated && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Client Stated Budget</span>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Stated Budget</span>
+              {budget?.stated ? (
                 <span className="text-lg font-bold text-foreground">{budget.stated}</span>
-              </div>
-            )}
-            {budget?.estimatedRange && (
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-ternary uppercase tracking-wide">Realistic Estimate</span>
-                <span className="text-sm text-ternary leading-relaxed">{budget.estimatedRange}</span>
-              </div>
-            )}
+              ) : (
+                <span className="text-sm text-ternary/50">N/A</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
               <Field label="Currency" value={budget?.currency} />
               <Field label="Payment Type" value={budget?.paymentPreference} />
@@ -246,65 +252,6 @@ export function LeadResearchTab({ leadResearch }: Props) {
           </div>
         </Card>
       </div>
-
-      {/* Core Requirements */}
-      <Card>
-        <SectionTitle icon={<Layers size={18} className="text-primary" />}>Core Project Requirements</SectionTitle>
-        {coreRequirements?.summary && (
-          <p className="text-sm text-ternary leading-relaxed mb-5">{coreRequirements.summary}</p>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {(coreRequirements?.features?.length ?? 0) > 0 && (
-            <div>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
-                <CheckCircle2 size={14} className="text-success-text" />Key Features
-              </p>
-              <TagList items={coreRequirements!.features!} color="bg-success-bg text-success-text border-green-200" />
-            </div>
-          )}
-          {(coreRequirements?.platforms?.length ?? 0) > 0 && (
-            <div>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
-                <Monitor size={14} className="text-blue" />Target Platforms
-              </p>
-              <TagList items={coreRequirements!.platforms!} color="bg-blue-50 text-blue border-blue-200" />
-            </div>
-          )}
-          {(coreRequirements?.integrations?.length ?? 0) > 0 && (
-            <div>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
-                <Plug size={14} className="text-primary" />Integrations Needed
-              </p>
-              <TagList items={coreRequirements!.integrations!} color="bg-primary/10 text-primary border-primary/20" />
-            </div>
-          )}
-          {(coreRequirements?.technicalConstraints?.length ?? 0) > 0 && (
-            <div>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
-                <Cpu size={14} className="text-ternary" />Technical Constraints
-              </p>
-              <TagList items={coreRequirements!.technicalConstraints!} color="bg-yellow-50 text-yellow-700 border-yellow-200" />
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Research Insights */}
-      {(researchInsights?.length ?? 0) > 0 && (
-        <Card>
-          <SectionTitle icon={<Lightbulb size={18} className="text-yellow" />}>Research Insights</SectionTitle>
-          <ol className="space-y-3">
-            {researchInsights!.map((insight, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="shrink-0 w-6 h-6 rounded-full bg-yellow-50 border border-yellow-200 text-xs font-bold text-yellow-700 flex items-center justify-center mt-0.5">
-                  {i + 1}
-                </span>
-                <p className="text-sm text-ternary leading-relaxed">{insight}</p>
-              </li>
-            ))}
-          </ol>
-        </Card>
-      )}
 
     </div>
   );

@@ -32,12 +32,12 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("integrations");
 
   useEffect(() => {
-    if (role && role !== "admin") {
+    if (role && role !== "admin" && role !== "superAdmin") {
       router.replace("/dashboard");
     }
   }, [role, router]);
 
-  if (!role || role !== "admin") {
+  if (!role || (role !== "admin" && role !== "superAdmin")) {
     return null;
   }
 

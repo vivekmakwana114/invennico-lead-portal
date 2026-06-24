@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { Trash2, Plus, Check, X, Pencil, Upload } from "lucide-react";
+import { Trash2, Plus, Check, X, Pencil, Upload, Copy, Eye, EyeOff } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { toast } from "sonner";
@@ -32,6 +32,8 @@ interface NewUser {
 interface EditData {
   name: string;
   email: string;
+  role: "admin" | "partner";
+  status: "active" | "inactive";
 }
 
 const roleOptions = [
@@ -51,9 +53,13 @@ export function UserManagementTab() {
   const dispatch = useAppDispatch();
   const { usersList, isLoading, actionLoading } = useAppSelector((state) => state.users);
 
-  const [newUser, setNewUser]     = useState<NewUser | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editData, setEditData]   = useState<EditData>({ name: "", email: "" });
+  const [newUser, setNewUser]         = useState<NewUser | null>(null);
+  const [editingId, setEditingId]     = useState<string | null>(null);
+  const [editData, setEditData]       = useState<EditData>({ name: "", email: "", role: "partner", status: "active" });
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+  const togglePasswordVisibility = (id: string) =>
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
 
   // Assign credits stepper state
   const [assigningId, setAssigningId]       = useState<string | null>(null);
@@ -66,23 +72,9 @@ export function UserManagementTab() {
 
   // ── Row actions ──────────────────────────────────────────────────────────────
 
-  async function handleRoleChange(id: string, role: string) {
-    const result = await dispatch(updateUser({ userId: id, payload: { role: role as "admin" | "partner" } }));
-    if (updateUser.rejected.match(result)) {
-      toast.error((result.payload as string) || "Failed to update role.");
-    }
-  }
-
-  async function handleStatusChange(id: string, status: string) {
-    const result = await dispatch(updateUser({ userId: id, payload: { status: status as "active" | "inactive" } }));
-    if (updateUser.rejected.match(result)) {
-      toast.error((result.payload as string) || "Failed to update status.");
-    }
-  }
-
   function handleEdit(member: any) {
     setEditingId(member.id);
-    setEditData({ name: member.name, email: member.email });
+    setEditData({ name: member.name, email: member.email, role: member.role, status: member.status });
   }
 
   async function handleSaveEdit() {
@@ -117,7 +109,7 @@ export function UserManagementTab() {
     }
     const result = await dispatch(createUser({ name: newUser.name, email: newUser.email, role: newUser.role }));
     if (createUser.fulfilled.match(result)) {
-      toast.success("User created. Default password: NewUser@707K10");
+      toast.success("User created successfully");
       setNewUser(null);
     } else {
       toast.error((result.payload as string) || "Failed to create user.");
@@ -268,21 +260,55 @@ export function UserManagementTab() {
                       className="w-full px-3 py-1.5 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
                   ) : (
-                    <span className="text-sm text-ternary whitespace-nowrap">{member.email}</span>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-sm text-ternary whitespace-nowrap overflow-hidden text-ellipsis">{member.email}</span>
+                        {member.plainPassword && (
+                          <>
+                            <button
+                              type="button"
+                              title={visiblePasswords[member.id] ? "Hide password" : "Show password"}
+                              onClick={() => togglePasswordVisibility(member.id)}
+                              className="text-ternary hover:text-primary transition-colors cursor-pointer shrink-0"
+                            >
+                              {visiblePasswords[member.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                            <button
+                              type="button"
+                              title="Copy email and password"
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${member.email}\n${member.plainPassword}`);
+                                toast.success("Email & password copied.");
+                              }}
+                              className="text-ternary hover:text-primary transition-colors cursor-pointer shrink-0"
+                            >
+                              <Copy size={13} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {member.plainPassword && visiblePasswords[member.id] && (
+                        <span className="text-xs font-mono text-amber-600 mt-0.5 whitespace-nowrap">
+                          {member.plainPassword}
+                        </span>
+                      )}
+                    </div>
                   )}
 
                   {/* Role */}
                   <Dropdown
                     options={roleOptions}
-                    value={member.role}
-                    onChange={(role) => handleRoleChange(member.id, role)}
+                    value={isEditing ? editData.role : member.role}
+                    onChange={(role) => isEditing && setEditData({ ...editData, role: role as "admin" | "partner" })}
+                    disabled={!isEditing}
                   />
 
                   {/* Status */}
                   <Dropdown
                     options={statusOptions}
-                    value={member.status}
-                    onChange={(status) => handleStatusChange(member.id, status)}
+                    value={isEditing ? editData.status : member.status}
+                    onChange={(status) => isEditing && setEditData({ ...editData, status: status as "active" | "inactive" })}
+                    disabled={!isEditing}
                   />
 
                   {/* Credits Used — pill */}

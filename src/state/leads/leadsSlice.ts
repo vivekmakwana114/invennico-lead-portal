@@ -21,12 +21,25 @@ function formatDate(iso: string | null | undefined): string {
   });
 }
 
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "N/A";
+  return new Date(iso).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 
 /** Map a raw backend lead object to the LeadDetail shape expected by the UI. */
 export function mapToLeadDetail(lead: any) {
   return {
     id: lead.id,
-    leadId: lead.leadId || `LD-${lead.leadNumber}`,
+    leadId: lead.leadId || (lead.leadPrefix ? `LD-${lead.leadPrefix}-${lead.leadNumber}` : `LD-${lead.leadNumber}`),
     fullProjectName: lead.title,
     clientContact: lead.clientContact || "N/A",
     createdByName: lead.createdBy?.name || null,
@@ -61,7 +74,7 @@ export function mapToLeadDetail(lead: any) {
     suggestedQuestions: lead.analysis?.suggestedQuestions || [],
     auditLog: (lead.auditLog || []).map((entry: any) => ({
       label: entry.label,
-      date: formatDate(entry.date),
+      date: formatDateTime(entry.date),
       actor: entry.actor,
     })),
     zoho:
@@ -85,10 +98,11 @@ export function mapToLeadDetail(lead: any) {
 export function mapToGridRow(lead: any) {
   return {
     id: lead.id,
-    leadId: lead.leadId || `LD-${lead.leadNumber}`,
+    leadId: lead.leadId || (lead.leadPrefix ? `LD-${lead.leadPrefix}-${lead.leadNumber}` : `LD-${lead.leadNumber}`),
     projectName: lead.title,
     tags: lead.tags || [],
     source: capitalize(lead.source),
+    createdByName: lead.createdBy?.name || null,
     dateReceived: formatDate(lead.createdAt),
     status: lead.status,
     budget: lead.budget || "N/A",

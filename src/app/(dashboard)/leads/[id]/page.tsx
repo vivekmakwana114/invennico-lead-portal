@@ -86,7 +86,7 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 export default function LeadViewPage() {
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
-  const { currentLead: rawLead, isLoading, actionLoading } = useAppSelector((s) => s.leads);
+  const { currentLead: rawLead, isLoading, actionLoading, error } = useAppSelector((s) => s.leads);
   const userRole = useAppSelector((s) => s.auth.user?.role);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
@@ -116,19 +116,24 @@ export default function LeadViewPage() {
 
   useEffect(() => {
     if (activeTab !== "attachments" || !rawLead?.pdfFile?.fileName || pdfBlobUrl) return;
-    setPdfLoading(true);
-    setPdfError(null);
-    leadsService.getLeadPdf(rawLead.id)
-      .then((res) => {
+    const loadPdf = async () => {
+      setPdfLoading(true);
+      setPdfError(null);
+      try {
+        const res = await leadsService.getLeadPdf(rawLead.id);
         const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
         pdfBlobUrlRef.current = url;
         setPdfBlobUrl(url);
-      })
-      .catch(() => setPdfError("Failed to load PDF. Please try again."))
-      .finally(() => setPdfLoading(false));
+      } catch {
+        setPdfError("Failed to load PDF. Please try again.");
+      } finally {
+        setPdfLoading(false);
+      }
+    };
+    loadPdf();
   }, [activeTab, rawLead?.id, rawLead?.pdfFile?.fileName, pdfBlobUrl]);
 
-  if (isLoading) {
+  if (isLoading || (!rawLead && !error)) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <p className="text-foreground font-medium">Loading Lead Data...</p>
@@ -258,7 +263,7 @@ export default function LeadViewPage() {
         {[
           { id: "overview", label: "Overview", icon: <FileText size={15} /> },
           { id: "attachments", label: "Attachments", icon: <Paperclip size={15} /> },
-          ...(userRole === "admin" ? [{ id: "lead-research", label: "Lead Research", icon: <Sparkles size={15} /> }] : []),
+          ...(userRole === "admin" || userRole === "superAdmin" ? [{ id: "lead-research", label: "Lead Research", icon: <Sparkles size={15} /> }] : []),
         ].map((tab) => (
           <button
             key={tab.id}
@@ -579,7 +584,20 @@ export default function LeadViewPage() {
           <Card className="p-5 space-y-3">
             <p className="text-sm font-semibold text-foreground">Actions</p>
 
-            <Button label="Draft WhatsApp Reply" icon={<MessageSquare size={15} />} iconPlacement="left" variant="primary" className="w-full px-4 py-2.5 text-sm" onClick={() => setWhatsappOpen(true)} disabled={(rawLead?.whatsappDraftCount ?? 0) >= 2} />
+            <Button
+              label={
+                (rawLead?.whatsappDraftCount ?? 0) >= 2
+                  ? "Final Draft Prepared"
+                  : (rawLead?.whatsappDraftCount ?? 0) === 1
+                  ? "1st Draft Prepared"
+                  : "Draft WhatsApp Reply"
+              }
+              icon={<MessageSquare size={15} />}
+              iconPlacement="left"
+              variant="primary"
+              className="w-full px-4 py-2.5 text-sm"
+              onClick={() => setWhatsappOpen(true)}
+            />
             <Button
               label={rawLead.proposalDoc?.generatedAt ? "Proposal Generated" : "Prepare Proposal"}
               icon={<FileText size={15} />}
@@ -636,28 +654,60 @@ export default function LeadViewPage() {
       )} {/* end overview tab */}
 
       {activeTab === "attachments" && (
-        <div className="bg-white border border-border rounded-2xl overflow-hidden min-h-[400px]">
-          {rawLead.pdfFile?.fileName ? (
-            pdfLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 size={24} className="animate-spin text-primary" />
+        <div className="space-y-6">
+          <Card>
+            <SectionTitle icon={<FileText size={20} className="text-primary" />}>Original Lead</SectionTitle>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-4">
+              <div>
+                <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1">Lead Name</p>
+                <p className="text-sm text-foreground">{rawLead.title}</p>
               </div>
-            ) : pdfError ? (
-              <div className="flex items-center justify-center h-64 text-sm text-error-text">{pdfError}</div>
-            ) : pdfBlobUrl ? (
-              <iframe src={pdfBlobUrl} className="w-full h-[75vh]" title="Lead PDF Attachment" />
-            ) : null
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-ternary">
-              <Paperclip size={32} className="opacity-30" />
-              <p className="text-sm">No PDF attachment for this lead.</p>
-              <p className="text-xs text-ternary/70">Upload a PDF when creating a lead to see it here.</p>
+              <div>
+                <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1">Source</p>
+                <p className="text-sm text-foreground capitalize">{rawLead.source}</p>
+              </div>
+              {rawLead.clientContact && (
+                <div>
+                  <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1">Client Contact</p>
+                  <p className="text-sm text-foreground">{rawLead.clientContact}</p>
+                </div>
+              )}
             </div>
-          )}
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1">Project Details</p>
+              <p className="text-sm text-ternary leading-relaxed whitespace-pre-wrap">{rawLead.details}</p>
+            </div>
+            {rawLead.notes && (
+              <div>
+                <p className="text-xs font-semibold text-ternary uppercase tracking-wide mb-1">Internal Notes</p>
+                <p className="text-sm text-ternary leading-relaxed whitespace-pre-wrap">{rawLead.notes}</p>
+              </div>
+            )}
+          </Card>
+
+          <div className="bg-white border border-border rounded-2xl overflow-hidden min-h-[400px]">
+            {rawLead.pdfFile?.fileName ? (
+              pdfLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 size={24} className="animate-spin text-primary" />
+                </div>
+              ) : pdfError ? (
+                <div className="flex items-center justify-center h-64 text-sm text-error-text">{pdfError}</div>
+              ) : pdfBlobUrl ? (
+                <iframe src={pdfBlobUrl} className="w-full h-[75vh]" title="Lead PDF Attachment" />
+              ) : null
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 gap-3 text-ternary">
+                <Paperclip size={32} className="opacity-30" />
+                <p className="text-sm">No PDF attachment for this lead.</p>
+                <p className="text-xs text-ternary/70">Upload a PDF when creating a lead to see it here.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {activeTab === "lead-research" && userRole === "admin" && (
+      {activeTab === "lead-research" && (userRole === "admin" || userRole === "superAdmin") && (
         <LeadResearchTab leadResearch={rawLead.leadResearch} />
       )}
 

@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { settingsService, UpdateSettingsPayload } from "./settingsService";
+import { settingsService, UpdateSettingsPayload, AiPrompts } from "./settingsService";
+
+const EMPTY_AI_PROMPTS: AiPrompts = {
+  leadAnalysis: "",
+  whatsappFirst: "",
+  whatsappRegen: "",
+  geminiResearch: "",
+  proposal: "",
+};
 
 interface SettingsState {
   settings: any | null;
@@ -9,11 +17,13 @@ interface SettingsState {
   error: string | null;
   saveError: string | null;
   saveSuccess: boolean;
-  // AI Prompt
-  aiPrompt: string;
+  // AI Prompts
+  aiPrompts: AiPrompts;
   promptLoading: boolean;
-  promptSaving: boolean;
-  promptSaveSuccess: boolean;
+  // Per-key save state — only one section saves at a time
+  promptSavingKey: keyof AiPrompts | null;
+  promptSaveSuccessKey: keyof AiPrompts | null;
+  promptSaveErrorKey: keyof AiPrompts | null;
   promptSaveError: string | null;
 }
 
@@ -24,11 +34,11 @@ const initialState: SettingsState = {
   error: null,
   saveError: null,
   saveSuccess: false,
-  // AI Prompt
-  aiPrompt: "",
+  aiPrompts: EMPTY_AI_PROMPTS,
   promptLoading: false,
-  promptSaving: false,
-  promptSaveSuccess: false,
+  promptSavingKey: null,
+  promptSaveSuccessKey: null,
+  promptSaveErrorKey: null,
   promptSaveError: null,
 };
 
@@ -65,25 +75,26 @@ export const fetchPrompt = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await settingsService.getPrompt();
-      return (res.data?.data?.aiPrompt as string) ?? "";
+      return (res.data?.data?.aiPrompts as AiPrompts) ?? EMPTY_AI_PROMPTS;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(
-        error.response?.data?.message || error.message || "Failed to fetch prompt"
+        error.response?.data?.message || error.message || "Failed to fetch prompts"
       );
     }
   }
 );
 
-export const savePrompt = createAsyncThunk(
-  "settings/savePrompt",
-  async (aiPrompt: string, thunkAPI) => {
+export const saveSinglePrompt = createAsyncThunk(
+  "settings/saveSinglePrompt",
+  async ({ key, value }: { key: keyof AiPrompts; value: string }, thunkAPI) => {
     try {
-      const res = await settingsService.updatePrompt(aiPrompt);
-      return (res.data?.data?.aiPrompt as string) ?? "";
+      await settingsService.updateSinglePrompt(key, value);
+      return { key, value };
     } catch (error: any) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data?.message || error.message || "Failed to save prompt"
-      );
+      return thunkAPI.rejectWithValue({
+        key,
+        message: error.response?.data?.message || error.message || "Failed to save prompt",
+      });
     }
   }
 );
@@ -97,7 +108,8 @@ const settingsSlice = createSlice({
       state.saveSuccess = false;
     },
     clearPromptStatus: (state) => {
-      state.promptSaveSuccess = false;
+      state.promptSaveSuccessKey = null;
+      state.promptSaveErrorKey = null;
       state.promptSaveError = null;
     },
   },
@@ -134,27 +146,30 @@ const settingsSlice = createSlice({
       .addCase(fetchPrompt.pending, (state) => {
         state.promptLoading = true;
       })
-      .addCase(fetchPrompt.fulfilled, (state, action: PayloadAction<string>) => {
+      .addCase(fetchPrompt.fulfilled, (state, action: PayloadAction<AiPrompts>) => {
         state.promptLoading = false;
-        state.aiPrompt = action.payload;
+        state.aiPrompts = action.payload;
       })
       .addCase(fetchPrompt.rejected, (state) => {
         state.promptLoading = false;
       })
 
-      .addCase(savePrompt.pending, (state) => {
-        state.promptSaving = true;
-        state.promptSaveSuccess = false;
+      .addCase(saveSinglePrompt.pending, (state, action) => {
+        state.promptSavingKey = action.meta.arg.key;
+        state.promptSaveSuccessKey = null;
+        state.promptSaveErrorKey = null;
         state.promptSaveError = null;
       })
-      .addCase(savePrompt.fulfilled, (state, action: PayloadAction<string>) => {
-        state.promptSaving = false;
-        state.promptSaveSuccess = true;
-        state.aiPrompt = action.payload;
+      .addCase(saveSinglePrompt.fulfilled, (state, action) => {
+        const { key, value } = action.payload;
+        state.promptSavingKey = null;
+        state.promptSaveSuccessKey = key;
+        state.aiPrompts[key] = value;
       })
-      .addCase(savePrompt.rejected, (state, action: PayloadAction<any>) => {
-        state.promptSaving = false;
-        state.promptSaveError = action.payload;
+      .addCase(saveSinglePrompt.rejected, (state, action: PayloadAction<any>) => {
+        state.promptSavingKey = null;
+        state.promptSaveErrorKey = action.payload?.key ?? null;
+        state.promptSaveError = action.payload?.message ?? "Failed to save";
       });
   },
 });

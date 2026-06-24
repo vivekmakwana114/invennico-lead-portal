@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { leadsService } from "@/state/leads/leadsService";
+import { useAppSelector } from "@/state/hooks";
 
 const SOURCE_OPTIONS = ["Alliance", "Direct", "Referral", "Upwork", "Freelancer", "Other"].map(
   (s) => ({ label: s, value: s })
@@ -45,6 +46,8 @@ function formatBytes(bytes: number) {
 export default function CreateLeadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const userRole = useAppSelector((s) => s.auth.user?.role);
+  const sourceOptions = userRole === "partner" ? [{ label: "Alliance", value: "Alliance" }] : SOURCE_OPTIONS;
   const [dragging, setDragging] = useState(false);
 
   const [form, setForm] = useState({
@@ -292,7 +295,7 @@ export default function CreateLeadPage() {
             Lead Source <span className="text-primary">*</span>
           </label>
           <Dropdown
-            options={SOURCE_OPTIONS}
+            options={sourceOptions}
             value={form.source}
             onChange={(v) => setForm((f) => ({ ...f, source: v }))}
           />

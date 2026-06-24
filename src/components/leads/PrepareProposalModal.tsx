@@ -48,15 +48,11 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
   const [barProgress, setBarProgress] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [downloadLoading, setDownloadLoading] = useState(false);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
 
-  // Body scroll lock
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
-
-  // Sync latest lead values into form every time the modal opens
-  useEffect(() => {
+  // Sync latest lead values into form every time the modal opens (setState-during-render)
+  if (prevIsOpen !== isOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setProposalName(lead.fullProjectName);
       setClientName(lead.clientContact === "N/A" ? "" : lead.clientContact);
@@ -64,7 +60,13 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
       setTimeline(lead.timeline === "N/A" ? "" : lead.timeline);
       setTechStack(buildTechStack(lead));
     }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
+
+  // Body scroll lock
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   // Reset phase/progress when modal closes
   useEffect(() => {

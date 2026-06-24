@@ -37,7 +37,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const profileAvatar = useAppSelector((state) => state.users.profile?.avatar);
   const role = user?.role;
   const visibleNavItems = navItems.filter(
-    (item) => !item.adminOnly || role === "admin",
+    (item) => !item.adminOnly || role === "admin" || role === "superAdmin",
   );
   const [avatarError, setAvatarError] = useState(false);
 

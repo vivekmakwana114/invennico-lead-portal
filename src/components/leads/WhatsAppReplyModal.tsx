@@ -49,8 +49,17 @@ export function WhatsAppReplyModal({ isOpen, onClose, lead }: WhatsAppReplyModal
 
     const count = lead.whatsappDraftCount ?? 0;
 
+    if (count >= 2) {
+      // Final draft already prepared — show it directly in the result view
+      setSavedDraft(lead.whatsappDraft || "");
+      setRegenMessage(lead.whatsappDraft || "");
+      setMode(2);
+      setMode2Phase("result");
+      return;
+    }
+
     if (count >= 1) {
-      // Already generated once — open straight into mode 2
+      // Already generated once — open straight into mode 2 for regeneration
       setSavedDraft(lead.whatsappDraft || "");
       setMode(2);
       return;
@@ -67,7 +76,7 @@ export function WhatsAppReplyModal({ isOpen, onClose, lead }: WhatsAppReplyModal
         techStack: lead.techStack ? Object.values(lead.techStack).flat().join(", ") : "N/A",
         timeline: lead.timeline,
         budget: lead.budget,
-        originalLead: lead.leadSummary,
+        originalLead: lead.originalLeadDetails || "N/A",
       })
       .then(async (res) => {
         const msg: string = res.data?.data?.message || "";
