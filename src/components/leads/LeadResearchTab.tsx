@@ -3,7 +3,7 @@
 import {
   User, Building2, MapPin, Briefcase, Globe, DollarSign,
   AlertCircle, CheckCircle2,
-  Github, Linkedin, Twitter, ExternalLink, Phone,
+  Code2, Link2, AtSign, ExternalLink, Phone,
 } from "lucide-react";
 
 interface LeadResearch {
@@ -153,7 +153,7 @@ export function LeadResearchTab({ leadResearch }: Props) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
                 >
-                  <Linkedin size={13} /> LinkedIn
+                  <Link2 size={13} /> LinkedIn
                 </a>
               )}
               {client?.socialLinks?.github && (
@@ -163,7 +163,7 @@ export function LeadResearchTab({ leadResearch }: Props) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
                 >
-                  <Github size={13} /> GitHub
+                  <Code2 size={13} /> GitHub
                 </a>
               )}
               {client?.socialLinks?.twitter && (
@@ -173,7 +173,7 @@ export function LeadResearchTab({ leadResearch }: Props) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-100 transition-colors"
                 >
-                  <Twitter size={13} /> X / Twitter
+                  <AtSign size={13} /> X / Twitter
                 </a>
               )}
               {client?.socialLinks?.personalSite && (
