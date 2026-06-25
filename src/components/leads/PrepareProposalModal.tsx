@@ -10,6 +10,40 @@ import type { LeadDetail } from "@/components/leads/LeadsDetailData";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function parseApiError(raw: unknown): string {
+  const str = typeof raw === "string" ? raw : (raw as any)?.message || "";
+
+  // Strip leading HTTP status code if present: "400 {...}"
+  const jsonStr = str.replace(/^\d{3}\s+/, "");
+  try {
+    const parsed = JSON.parse(jsonStr);
+    const type: string = parsed?.error?.type ?? "";
+    const msg: string = parsed?.error?.message ?? "";
+
+    if (type === "authentication_error" || msg.toLowerCase().includes("api key")) {
+      return "The AI service API key is invalid or missing. Please contact your administrator.";
+    }
+    if (
+      type === "invalid_request_error" &&
+      (msg.toLowerCase().includes("credit") || msg.toLowerCase().includes("billing"))
+    ) {
+      return "The AI service has run out of credits. Please contact your administrator to top up the account before generating a proposal.";
+    }
+    if (type === "rate_limit_error" || msg.toLowerCase().includes("rate limit")) {
+      return "Too many requests. Please wait a moment and try again.";
+    }
+    if (msg) return msg;
+  } catch {
+    // not JSON — fall through
+  }
+
+  if (str.toLowerCase().includes("credit") || str.toLowerCase().includes("billing")) {
+    return "The AI service has run out of credits. Please contact your administrator to top up the account before generating a proposal.";
+  }
+
+  return str || "Something went wrong. Please try again.";
+}
+
 function buildTechStack(lead: LeadDetail): string {
   return [
     ...(lead.techStack.frontend?.slice(0, 1) ?? []),
@@ -107,7 +141,7 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
     } catch (err: any) {
       clearTimeout(t1);
       clearTimeout(t2);
-      setErrorMsg(typeof err === "string" ? err : err?.message || "Something went wrong. Please try again.");
+      setErrorMsg(parseApiError(err));
       setPhase("error");
     }
   }
