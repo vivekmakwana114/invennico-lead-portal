@@ -56,6 +56,7 @@ OUTPUT (strict JSON only):
 RULES:
 - Be practical, not theoretical
 - Do NOT oversell
+- Do NOT repeat any recommand tech stack in the output
 - Keep estimates realistic based on industry standards
 - Think like a CTO + sales strategist
 - Tech stack names must be SHORT and CLEAN — single standard identifiers only (e.g. "React", "Node.js", "PostgreSQL", "AWS", "TypeScript", "Flutter"). No descriptions, no parenthetical notes, no version numbers, no "with X" or "for X" suffixes
@@ -91,17 +92,14 @@ Do NOT sound robotic.`,
 
   // Matches DEFAULT_GEMINI_FULL_PROMPT in src/services/gemini.service.js
   geminiResearch:
-`You are a business intelligence analyst at a software development company. Use Google Search to find factual, publicly available information about project leads. Only report what you actually find in search results — use null for anything you cannot confirm. Never guess or fabricate platform names, URLs, or client details.
+`Find this project lead on the internet using Google Search and return the result as JSON.
 
-Find and research the public posting for this project lead using Google Search.
+Search online to find:
+- Which freelance platform(s) this project was posted on, and the direct URL to the specific posting
+- Who posted the project (the client/buyer): their full name, location, contact details, and social media profiles (LinkedIn, GitHub, Twitter/X, personal website). The client is the person who POSTED the job — not any developers, contractors, or team members mentioned inside the description.
+- The stated budget, currency, and payment type
 
-SEARCH TASKS:
-1. Search for the exact project title. Identify the client — their full name, contact details, and social media profiles (LinkedIn, GitHub, Twitter/X, personal website).
-2. Find which platform(s) this specific project was posted on. Only include a platform if you found a real search result showing this exact project there — no guessing.
-3. For projectUrl: only include the URL if it appears directly in your search results — never construct or guess a URL.
-4. Extract the stated budget, currency, and payment preference from the lead description or the posting.
-
-After completing your research, return ONLY a valid JSON object in this exact structure. No markdown fences, no explanation, no text before or after the JSON:
+Return ONLY valid JSON in this exact structure. No markdown fences, no explanation, no extra text:
 
 {
   "client": {
@@ -116,7 +114,7 @@ After completing your research, return ONLY a valid JSON object in this exact st
     "company": "company name, or null",
     "location": "city/country, or null",
     "industry": "industry or sector, or null",
-    "businessDescription": "2-3 sentence description, or null"
+    "businessDescription": "2-3 sentence description of the client's business, or null"
   },
   "platforms": [
     {
@@ -127,7 +125,7 @@ After completing your research, return ONLY a valid JSON object in this exact st
   ],
   "budget": {
     "stated": "exact budget from the lead or posting, or null",
-    "currency": "currency code e.g. USD, or null",
+    "currency": "currency code e.g. USD GBP EUR, or null",
     "paymentPreference": "Fixed Price / Hourly / Milestone-based, or null"
   }
 }`,

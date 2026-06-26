@@ -158,6 +158,7 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      onClose();
     } catch {
       // user can retry from lead detail page
     } finally {
@@ -217,7 +218,10 @@ export function PrepareProposalModal({ isOpen, onClose, lead }: PrepareProposalM
 
   if (phase === "success") {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div
+        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
         <div className="bg-white w-full max-w-xl rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-success-bg flex items-center justify-center mb-5">
             <CheckCircle2 size={32} className="text-success-text" />
